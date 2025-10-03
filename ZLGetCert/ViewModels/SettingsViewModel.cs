@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Windows.Input;
 using ZLGetCert.Models;
 using ZLGetCert.Services;
@@ -172,7 +173,7 @@ namespace ZLGetCert.ViewModels
                 FilePaths = new FilePathsConfig
                 {
                     CertificateFolder = "C:\\ssl",
-                    LogPath = "C:\\ProgramData\\ZLGetCert"
+                    LogPath = "C:\\ProgramData\\ZentrixLabs\\ZLGetCert"
                 },
                 OpenSSL = new OpenSSLConfig
                 {
@@ -186,7 +187,8 @@ namespace ZLGetCert.ViewModels
                     DefaultPassword = "password",
                     RequirePasswordConfirmation = true,
                     AutoCleanup = true,
-                    RememberPassword = false
+                    RememberPassword = false,
+                    AvailableHashAlgorithms = new List<string> { "sha256", "sha384", "sha512" }
                 },
                 Logging = new LoggingConfig
                 {
@@ -194,7 +196,16 @@ namespace ZLGetCert.ViewModels
                     LogToFile = true,
                     LogToConsole = false,
                     MaxLogFileSize = "10MB",
-                    MaxLogFiles = 5
+                    MaxLogFiles = 5,
+                    AvailableLogLevels = new List<Enums.LogLevel> 
+                    { 
+                        Enums.LogLevel.Trace, 
+                        Enums.LogLevel.Debug, 
+                        Enums.LogLevel.Information, 
+                        Enums.LogLevel.Warning, 
+                        Enums.LogLevel.Error, 
+                        Enums.LogLevel.Fatal 
+                    }
                 }
             };
         }

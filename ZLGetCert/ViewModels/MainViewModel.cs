@@ -249,11 +249,11 @@ namespace ZLGetCert.ViewModels
         }
 
         /// <summary>
-        /// Show settings panel
+        /// Toggle settings panel
         /// </summary>
         private void ShowSettingsPanel()
         {
-            ShowSettings = true;
+            ShowSettings = !ShowSettings;
         }
 
         /// <summary>

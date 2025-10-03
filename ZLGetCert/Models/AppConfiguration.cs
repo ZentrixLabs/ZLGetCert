@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.ComponentModel;
 using ZLGetCert.Enums;
 
@@ -219,6 +220,7 @@ namespace ZLGetCert.Models
         private bool _requirePasswordConfirmation;
         private bool _autoCleanup;
         private bool _rememberPassword;
+        private List<string> _availableHashAlgorithms;
 
         /// <summary>
         /// Default key length
@@ -298,6 +300,19 @@ namespace ZLGetCert.Models
             }
         }
 
+        /// <summary>
+        /// Available hash algorithms
+        /// </summary>
+        public List<string> AvailableHashAlgorithms
+        {
+            get => _availableHashAlgorithms;
+            set
+            {
+                _availableHashAlgorithms = value;
+                OnPropertyChanged(nameof(AvailableHashAlgorithms));
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged(string propertyName)
@@ -316,6 +331,7 @@ namespace ZLGetCert.Models
         private bool _logToConsole;
         private string _maxLogFileSize;
         private int _maxLogFiles;
+        private List<Enums.LogLevel> _availableLogLevels;
 
         /// <summary>
         /// Minimum log level
@@ -379,6 +395,19 @@ namespace ZLGetCert.Models
             {
                 _maxLogFiles = value;
                 OnPropertyChanged(nameof(MaxLogFiles));
+            }
+        }
+
+        /// <summary>
+        /// Available log levels
+        /// </summary>
+        public List<Enums.LogLevel> AvailableLogLevels
+        {
+            get => _availableLogLevels;
+            set
+            {
+                _availableLogLevels = value;
+                OnPropertyChanged(nameof(AvailableLogLevels));
             }
         }
 

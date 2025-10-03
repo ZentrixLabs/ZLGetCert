@@ -139,19 +139,27 @@
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
                     <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
                         <Border x:Name="Border"
+                                Grid.Column="0"
                                 Background="White"
                                 BorderBrush="#D1D5DB"
                                 BorderThickness="1"
                                 Width="16" Height="16"
-                                CornerRadius="2">
+                                CornerRadius="2"
+                                VerticalAlignment="Center">
                             <Path x:Name="CheckMark"
                                   Data="M 2 6 L 6 10 L 14 2"
                                   Stroke="White"
                                   StrokeThickness="2"
                                   Visibility="Collapsed"/>
                         </Border>
-                        <ContentPresenter Margin="20,0,0,0"
+                        <ContentPresenter Grid.Column="1"
+                                          Margin="8,0,0,0"
                                           VerticalAlignment="Center"/>
                     </Grid>
                     <ControlTemplate.Triggers>
@@ -182,29 +190,38 @@
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
                     <Grid>
-                        <Ellipse x:Name="OuterCircle"
-                                 Background="White"
-                                 BorderBrush="#D1D5DB"
-                                 BorderThickness="1"
-                                 Width="16" Height="16"/>
-                        <Ellipse x:Name="InnerCircle"
-                                 Background="{StaticResource PrimaryColor}"
-                                 Width="8" Height="8"
-                                 Visibility="Collapsed"/>
-                        <ContentPresenter Margin="20,0,0,0"
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <Grid Grid.Column="0" VerticalAlignment="Center">
+                            <Ellipse x:Name="OuterCircle"
+                                     Fill="White"
+                                     Stroke="#D1D5DB"
+                                     StrokeThickness="1"
+                                     Width="16" Height="16"/>
+                            <Ellipse x:Name="InnerCircle"
+                                     Fill="{StaticResource PrimaryColor}"
+                                     Width="8" Height="8"
+                                     Visibility="Collapsed"/>
+                        </Grid>
+                        
+                        <ContentPresenter Grid.Column="1" 
+                                          Margin="8,0,0,0"
                                           VerticalAlignment="Center"/>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="OuterCircle" Property="BorderBrush" Value="{StaticResource PrimaryColor}"/>
+                            <Setter TargetName="OuterCircle" Property="Stroke" Value="{StaticResource PrimaryColor}"/>
                             <Setter TargetName="InnerCircle" Property="Visibility" Value="Visible"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="OuterCircle" Property="BorderBrush" Value="{StaticResource PrimaryColor}"/>
+                            <Setter TargetName="OuterCircle" Property="Stroke" Value="{StaticResource PrimaryColor}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter TargetName="OuterCircle" Property="Background" Value="#F3F4F6"/>
-                            <Setter TargetName="OuterCircle" Property="BorderBrush" Value="#D1D5DB"/>
+                            <Setter TargetName="OuterCircle" Property="Fill" Value="#F3F4F6"/>
+                            <Setter TargetName="OuterCircle" Property="Stroke" Value="#D1D5DB"/>
                             <Setter Property="Foreground" Value="#9CA3AF"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -224,34 +241,49 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBox">
                     <Grid>
-                        <ToggleButton x:Name="ToggleButton"
-                                      Grid.Column="2"
-                                      Focusable="False"
-                                      IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
-                                      ClickMode="Press">
-                            <Path x:Name="Arrow"
-                                  Fill="#6B7280"
-                                  HorizontalAlignment="Right"
-                                  VerticalAlignment="Center"
-                                  Margin="0,0,8,0"
-                                  Data="M 0 0 L 4 4 L 8 0 Z"/>
-                        </ToggleButton>
-                        <ContentPresenter x:Name="ContentSite"
-                                          IsHitTestVisible="False"
-                                          Content="{TemplateBinding SelectionBoxItem}"
-                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
-                                          ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
-                                          Margin="8,6,25,6"
-                                          VerticalAlignment="Center"
-                                          HorizontalAlignment="Left"/>
-                        <TextBox x:Name="PART_EditableTextBox"
-                                 IsReadOnly="{TemplateBinding IsReadOnly}"
-                                 Background="{TemplateBinding Background}"
-                                 BorderThickness="0"
-                                 Margin="8,6,25,6"
-                                 Focusable="True"
-                                 HorizontalAlignment="Left"
-                                 VerticalAlignment="Center"/>
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <ContentPresenter x:Name="ContentSite"
+                                              Grid.Column="0"
+                                              IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                              Margin="8,6,0,6"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Left"/>
+                            <TextBox x:Name="PART_EditableTextBox"
+                                     Grid.Column="0"
+                                     IsReadOnly="{TemplateBinding IsReadOnly}"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Margin="8,6,0,6"
+                                     Focusable="True"
+                                     HorizontalAlignment="Left"
+                                     VerticalAlignment="Center"/>
+                            
+                            <ToggleButton x:Name="ToggleButton"
+                                          Grid.Column="1"
+                                          Background="Transparent"
+                                          BorderThickness="0"
+                                          Focusable="False"
+                                          IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                          ClickMode="Press">
+                                <Path x:Name="Arrow"
+                                      Fill="#6B7280"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Data="M 0 0 L 4 4 L 8 0 Z"/>
+                            </ToggleButton>
+                        </Grid>
                         <Popup x:Name="Popup"
                                Placement="Bottom"
                                IsOpen="{TemplateBinding IsDropDownOpen}"
@@ -298,5 +330,88 @@
         <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
         <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
     </Style>
+
+    <!-- Card Styles for better section separation -->
+    <Style x:Key="CardStyle" TargetType="Border">
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="BorderBrush" Value="#E5E7EB"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="20"/>
+        <Setter Property="Margin" Value="0,0,0,20"/>
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect Color="Gray" 
+                                  Direction="315" 
+                                  ShadowDepth="2" 
+                                  Opacity="0.1" 
+                                  BlurRadius="4"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Section Header Style -->
+    <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource DarkColor}"/>
+        <Setter Property="Margin" Value="0,0,0,15"/>
+    </Style>
+
+    <!-- Form Group Style -->
+    <Style x:Key="FormGroupStyle" TargetType="StackPanel">
+        <Setter Property="Margin" Value="0,0,0,20"/>
+    </Style>
+
+    <!-- Field Label Style -->
+    <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="#374151"/>
+        <Setter Property="Margin" Value="0,0,0,5"/>
+    </Style>
+
+    <!-- Status Indicator Styles -->
+    <Style x:Key="SuccessStatusStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{StaticResource SuccessColor}"/>
+        <Setter Property="Margin" Value="0,5,0,0"/>
+    </Style>
+
+    <Style x:Key="WarningStatusStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{StaticResource WarningColor}"/>
+        <Setter Property="Margin" Value="0,5,0,0"/>
+    </Style>
+
+    <Style x:Key="ErrorStatusStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{StaticResource DangerColor}"/>
+        <Setter Property="Margin" Value="0,5,0,0"/>
+    </Style>
+
+    <!-- Icon Button Style -->
+    <Style x:Key="IconButtonStyle" TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+        <Setter Property="Width" Value="32"/>
+        <Setter Property="Height" Value="32"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="FontSize" Value="14"/>
+    </Style>
+
+    <!-- Toggle Button Style for Settings -->
+    <Style x:Key="ToggleButtonStyle" TargetType="Button" BasedOn="{StaticResource BaseButtonStyle}">
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="Foreground" Value="{StaticResource SecondaryColor}"/>
+        <Setter Property="BorderBrush" Value="#D1D5DB"/>
+        <Setter Property="Padding" Value="12,6"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+    </Style>
+
+    <Style x:Key="ToggleButtonActiveStyle" TargetType="Button" BasedOn="{StaticResource ToggleButtonStyle}">
+        <Setter Property="Background" Value="{StaticResource PrimaryColor}"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="BorderBrush" Value="{StaticResource PrimaryColor}"/>
+    </Style>
+
 
 </ResourceDictionary>
