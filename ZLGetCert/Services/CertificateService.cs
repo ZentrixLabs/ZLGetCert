@@ -405,7 +405,7 @@ namespace ZLGetCert.Services
 
                 var cert = store.Certificates.Cast<X509Certificate2>()
                     .FirstOrDefault(c => c.Subject.Contains(request.FQDN) || 
-                                       (request.Type == CertificateType.Wildcard && c.Subject.Contains("*.root.mpmaterials.com")));
+                                       (request.Type == CertificateType.Wildcard && c.Subject.Contains("*.example.com")));
 
                 store.Close();
                 return cert;

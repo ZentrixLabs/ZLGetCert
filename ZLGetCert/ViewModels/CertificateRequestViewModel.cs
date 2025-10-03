@@ -35,7 +35,7 @@ namespace ZLGetCert.ViewModels
 
             // Initialize properties
             _type = CertificateType.Standard;
-            _company = "root.mpmaterials.com";
+            _company = "example.com";
             _ou = "IT";
             _extractPemKey = false;
             _showPassword = false;
@@ -355,7 +355,7 @@ namespace ZLGetCert.ViewModels
             FQDN = "";
             Location = "";
             State = "";
-            Company = "root.mpmaterials.com";
+            Company = "example.com";
             OU = "IT";
             Type = CertificateType.Standard;
             CsrFilePath = "";

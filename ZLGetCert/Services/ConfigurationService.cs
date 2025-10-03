@@ -157,15 +157,15 @@ namespace ZLGetCert.Services
             {
                 CertificateAuthority = new CertificateAuthorityConfig
                 {
-                    Server = "mpazica01.root.mpmaterials.com",
-                    Template = "WebServerV2",
-                    DefaultCompany = "root.mpmaterials.com",
+                    Server = "your-ca-server.example.com",
+                    Template = "WebServer",
+                    DefaultCompany = "example.com",
                     DefaultOU = "IT"
                 },
                 FilePaths = new FilePathsConfig
                 {
                     CertificateFolder = "C:\\ssl",
-                    LogPath = "C:\\ProgramData\\ZentrixLabs\\ZLGetCert"
+                    LogPath = "C:\\ProgramData\\ZLGetCert"
                 },
                 OpenSSL = new OpenSSLConfig
                 {

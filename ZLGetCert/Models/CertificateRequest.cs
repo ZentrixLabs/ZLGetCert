@@ -28,7 +28,7 @@ namespace ZLGetCert.Models
         {
             _dnsSans = new List<SanEntry>();
             _ipSans = new List<SanEntry>();
-            _company = "root.mpmaterials.com";
+            _company = "example.com";
             _ou = "IT";
             _type = CertificateType.Standard;
             _extractPemKey = false;
