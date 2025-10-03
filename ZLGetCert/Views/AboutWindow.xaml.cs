@@ -1,14 +1,15 @@
 using System.Windows;
 
-namespace SrtExtractor.Views;
-
-/// <summary>
-/// Interaction logic for AboutWindow.xaml
-/// </summary>
-public partial class AboutWindow : Window
+namespace ZLGetCert.Views
 {
-    public AboutWindow()
+    /// <summary>
+    /// Interaction logic for AboutWindow.xaml
+    /// </summary>
+    public partial class AboutWindow : Window
     {
-        InitializeComponent();
+        public AboutWindow()
+        {
+            InitializeComponent();
+        }
     }
 }

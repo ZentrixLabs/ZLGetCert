@@ -21,7 +21,11 @@ namespace ZLGetCert.Views
 
         private void About_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("ZLGetCert - Certificate Management for On-Premises CA\n\nVersion 1.0", "About ZLGetCert", MessageBoxButton.OK, MessageBoxImage.Information);
+            var aboutWindow = new AboutWindow
+            {
+                Owner = this
+            };
+            aboutWindow.ShowDialog();
         }
     }
 }
