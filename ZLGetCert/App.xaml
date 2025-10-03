@@ -1,0 +1,57 @@
+<Application x:Class="ZLGetCert.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="Views/MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            
+            <!-- Converters -->
+            <converters:EnumToBoolConverter x:Key="EnumToBoolConverter" xmlns:converters="clr-namespace:ZLGetCert.Converters"/>
+            <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" xmlns:converters="clr-namespace:ZLGetCert.Converters"/>
+            <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" xmlns:converters="clr-namespace:ZLGetCert.Converters"/>
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter" xmlns:converters="clr-namespace:ZLGetCert.Converters"/>
+            
+            <!-- Temporary button styles -->
+            <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="White"/>
+                <Setter Property="Foreground" Value="#6B7280"/>
+                <Setter Property="BorderBrush" Value="#D1D5DB"/>
+                <Setter Property="Padding" Value="12,8"/>
+                <Setter Property="Margin" Value="2"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Cursor" Value="Hand"/>
+            </Style>
+            <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="#3B82F6"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="BorderBrush" Value="#3B82F6"/>
+                <Setter Property="Padding" Value="12,8"/>
+                <Setter Property="Margin" Value="2"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Cursor" Value="Hand"/>
+            </Style>
+            <Style x:Key="DangerButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="#EF4444"/>
+                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="BorderBrush" Value="#EF4444"/>
+                <Setter Property="Padding" Value="8,4"/>
+                <Setter Property="Margin" Value="2"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Cursor" Value="Hand"/>
+            </Style>
+            
+            <!-- TextBox Style -->
+            <Style TargetType="TextBox">
+                <Setter Property="Padding" Value="12,10"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderBrush" Value="#D1D5DB"/>
+                <Setter Property="Background" Value="White"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="MinHeight" Value="40"/>
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

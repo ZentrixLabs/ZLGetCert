@@ -1,0 +1,8 @@
+<UserControl x:Class="ZLGetCert.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <!-- This view is embedded in MainWindow, so content is defined there -->
+        <TextBlock Text="Settings View" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    </Grid>
+</UserControl>

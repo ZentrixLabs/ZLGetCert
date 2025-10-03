@@ -1,0 +1,404 @@
+<Window x:Class="ZLGetCert.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:enums="clr-namespace:ZLGetCert.Enums"
+        mc:Ignorable="d"
+        Title="ZLGetCert - Certificate Management" 
+        Height="800" 
+        Width="1000"
+        MinHeight="600"
+        MinWidth="800"
+        WindowStartupLocation="CenterScreen">
+    
+    <Window.Resources>
+        <Style x:Key="HeaderTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+        
+        <Style x:Key="SectionTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,15,0,5"/>
+        </Style>
+        
+        <Style x:Key="StatusTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="Margin" Value="0,5,0,0"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Menu Bar -->
+        <Menu Grid.Row="0" Background="#F8F9FA" BorderBrush="#E9ECEF" BorderThickness="0,0,0,1">
+            <MenuItem Header="_File">
+                <MenuItem Header="_New Certificate" Command="{Binding ClearFormCommand}"/>
+                <Separator/>
+                <MenuItem Header="E_xit" Click="Exit_Click"/>
+            </MenuItem>
+            <MenuItem Header="_Edit">
+                <MenuItem Header="_Settings" Command="{Binding ShowSettingsCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_About" Click="About_Click"/>
+            </MenuItem>
+        </Menu>
+
+        <!-- Header -->
+        <Border Grid.Row="1" Background="#2E3440" Padding="20,15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="ZLGetCert" Style="{StaticResource HeaderTextStyle}" Foreground="White"/>
+                    <TextBlock Text="Certificate Management for On-Premises CA" 
+                               Style="{StaticResource StatusTextStyle}" Foreground="#D8DEE9"/>
+                </StackPanel>
+                
+            </Grid>
+        </Border>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Certificate Request Form -->
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" Padding="20">
+                <StackPanel>
+                    <TextBlock Text="Certificate Request" Style="{StaticResource HeaderTextStyle}"/>
+                    
+                    <!-- Certificate Type Selection -->
+                    <TextBlock Text="Certificate Type" Style="{StaticResource SectionTextStyle}"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                        <RadioButton Content="Standard Certificate" 
+                                     IsChecked="{Binding CertificateRequest.Type, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Standard}"
+                                     Margin="0,0,20,0"/>
+                        <RadioButton Content="Wildcard Certificate" 
+                                     IsChecked="{Binding CertificateRequest.Type, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Wildcard}"
+                                     Margin="0,0,20,0"/>
+                        <RadioButton Content="From CSR File" 
+                                     IsChecked="{Binding CertificateRequest.Type, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=FromCSR}"/>
+                    </StackPanel>
+
+                    <!-- CSR File Selection (for FromCSR type) -->
+                    <StackPanel Visibility="{Binding CertificateRequest.IsFromCSR, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <TextBlock Text="CSR File" Style="{StaticResource SectionTextStyle}"/>
+                        <Grid Margin="0,0,0,15">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" 
+                                     Text="{Binding CertificateRequest.CsrFilePath}" 
+                                     IsReadOnly="True"
+                                     Margin="0,0,10,0"/>
+                            <Button Grid.Column="1" 
+                                    Content="Browse..." 
+                                    Command="{Binding CertificateRequest.BrowseCsrCommand}"
+                                    Style="{StaticResource SecondaryButtonStyle}"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Hostname and FQDN (for Standard and Wildcard types) -->
+                    <StackPanel Visibility="{Binding CertificateRequest.IsFromCSR, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                        <TextBlock Text="Hostname" Style="{StaticResource SectionTextStyle}"/>
+                        <TextBox Text="{Binding CertificateRequest.HostName}" 
+                                 Margin="0,0,0,15"
+                                 IsEnabled="{Binding CertificateRequest.IsWildcard, Converter={StaticResource InverseBoolConverter}}"/>
+                        
+                        <TextBlock Text="Fully Qualified Domain Name" Style="{StaticResource SectionTextStyle}"/>
+                        <TextBox Text="{Binding CertificateRequest.FQDN}" 
+                                 IsReadOnly="True"
+                                 Margin="0,0,0,15"
+                                 Background="#F5F5F5"/>
+                    </StackPanel>
+
+                    <!-- Location and State -->
+                    <Grid Margin="0,0,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Location (City)" Style="{StaticResource SectionTextStyle}"/>
+                            <TextBox Text="{Binding CertificateRequest.Location}"/>
+                        </StackPanel>
+                        
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="State (2-letter code)" Style="{StaticResource SectionTextStyle}"/>
+                            <TextBox Text="{Binding CertificateRequest.State}" MaxLength="2"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Company and OU -->
+                    <Grid Margin="0,0,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Company Domain" Style="{StaticResource SectionTextStyle}"/>
+                            <TextBox Text="{Binding CertificateRequest.Company}"/>
+                        </StackPanel>
+                        
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Organizational Unit" Style="{StaticResource SectionTextStyle}"/>
+                            <TextBox Text="{Binding CertificateRequest.OU}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- SANs (for Standard type only) -->
+                    <StackPanel Visibility="{Binding CertificateRequest.IsFromCSR, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                        <TextBlock Text="Subject Alternative Names (SANs)" Style="{StaticResource SectionTextStyle}"/>
+                        
+                        <!-- DNS SANs -->
+                        <TextBlock Text="DNS Names:" Margin="0,10,0,5" FontWeight="SemiBold"/>
+                        <ItemsControl ItemsSource="{Binding CertificateRequest.DnsSans}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Grid.Column="0" 
+                                                 Text="{Binding Value}" 
+                                                 Margin="0,0,10,0"/>
+                                        <Button Grid.Column="1" 
+                                                Content="Remove" 
+                                                Command="{Binding DataContext.RemoveDnsSanCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource DangerButtonStyle}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Content="Add DNS Name" 
+                                Command="{Binding AddDnsSanCommand}"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="0,5,0,15"/>
+
+                        <!-- IP SANs -->
+                        <TextBlock Text="IP Addresses:" FontWeight="SemiBold"/>
+                        <ItemsControl ItemsSource="{Binding CertificateRequest.IpSans}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Grid.Column="0" 
+                                                 Text="{Binding Value}" 
+                                                 Margin="0,0,10,0"/>
+                                        <Button Grid.Column="1" 
+                                                Content="Remove" 
+                                                Command="{Binding DataContext.RemoveIpSanCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource DangerButtonStyle}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Content="Add IP Address" 
+                                Command="{Binding AddIpSanCommand}"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="0,5,0,15"/>
+                    </StackPanel>
+
+                    <!-- PFX Password -->
+                    <TextBlock Text="PFX Password" Style="{StaticResource SectionTextStyle}"/>
+                    <Grid Margin="0,0,0,5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" 
+                                 Text="{Binding CertificateRequest.PfxPassword}"
+                                 Margin="0,0,10,0"/>
+                        <Button Grid.Column="1" 
+                                Content="👁" 
+                                Command="{Binding CertificateRequest.TogglePasswordVisibilityCommand}"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Width="30"/>
+                    </Grid>
+                    <TextBlock Text="{Binding CertificateRequest.PasswordStrength}" 
+                               Style="{StaticResource StatusTextStyle}"/>
+
+                    <!-- Confirm Password -->
+                    <TextBlock Text="Confirm Password" Style="{StaticResource SectionTextStyle}" Margin="0,10,0,0"/>
+                    <Grid Margin="0,0,0,5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" 
+                                 Text="{Binding CertificateRequest.ConfirmPassword}"
+                                 Margin="0,0,10,0"/>
+                        <Button Grid.Column="1" 
+                                Content="👁" 
+                                Command="{Binding CertificateRequest.ToggleConfirmPasswordVisibilityCommand}"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Width="30"/>
+                    </Grid>
+
+                    <!-- OpenSSL Options -->
+                    <CheckBox Content="Extract PEM and KEY files (requires OpenSSL)" 
+                              IsChecked="{Binding CertificateRequest.ExtractPemKey}"
+                              Margin="0,15,0,0"/>
+                    <TextBlock Text="{Binding OpenSSLStatus}" 
+                               Style="{StaticResource StatusTextStyle}"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Settings Panel -->
+            <Border Grid.Column="1" 
+                    Width="300" 
+                    Background="#F8F9FA" 
+                    BorderBrush="#E9ECEF" 
+                    BorderThickness="1,0,0,0"
+                    Visibility="{Binding ShowSettings, Converter={StaticResource BoolToVisibilityConverter}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+                    <StackPanel>
+                        <TextBlock Text="Settings" Style="{StaticResource HeaderTextStyle}"/>
+                        
+                        <!-- Certificate Authority Settings -->
+                        <TextBlock Text="Certificate Authority" Style="{StaticResource SectionTextStyle}"/>
+                        <TextBlock Text="CA Server:" Margin="0,5,0,2" FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding Settings.Configuration.CertificateAuthority.Server}" 
+                                 Margin="0,0,0,10"/>
+                        <TextBlock Text="Certificate Template:" Margin="0,5,0,2" FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding Settings.Configuration.CertificateAuthority.Template}" 
+                                 Margin="0,0,0,10"/>
+                        <TextBlock Text="Default Company:" Margin="0,5,0,2" FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding Settings.Configuration.CertificateAuthority.DefaultCompany}" 
+                                 Margin="0,0,0,10"/>
+                        <TextBlock Text="Default OU:" Margin="0,5,0,2" FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding Settings.Configuration.CertificateAuthority.DefaultOU}" 
+                                 Margin="0,0,0,15"/>
+
+                        <!-- File Paths -->
+                        <TextBlock Text="File Paths" Style="{StaticResource SectionTextStyle}"/>
+                        <TextBlock Text="Certificate Folder:" Margin="0,5,0,2" FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding Settings.Configuration.FilePaths.CertificateFolder}" 
+                                 Margin="0,0,0,10"/>
+                        <TextBlock Text="Log Folder:" Margin="0,5,0,2" FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding Settings.Configuration.FilePaths.LogPath}" 
+                                 Margin="0,0,0,15"/>
+
+                        <!-- OpenSSL Settings -->
+                        <TextBlock Text="OpenSSL" Style="{StaticResource SectionTextStyle}"/>
+                        <CheckBox Content="Auto-detect OpenSSL" 
+                                  IsChecked="{Binding Settings.Configuration.OpenSSL.AutoDetect}"
+                                  Margin="0,0,0,10"/>
+                        <TextBlock Text="OpenSSL Executable Path:" Margin="0,5,0,2" FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding Settings.Configuration.OpenSSL.ExecutablePath}" 
+                                 Margin="0,0,0,10"/>
+                        <Button Content="Test OpenSSL" 
+                                Command="{Binding Settings.TestOpenSSLCommand}"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Margin="0,0,0,15"/>
+
+                        <!-- Default Settings -->
+                        <TextBlock Text="Default Settings" Style="{StaticResource SectionTextStyle}"/>
+                        <TextBlock Text="Key Length:" Margin="0,5,0,2" FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding Settings.Configuration.DefaultSettings.KeyLength}" 
+                                 Margin="0,0,0,10"/>
+                        <TextBlock Text="Hash Algorithm:" Margin="0,5,0,2" FontWeight="SemiBold"/>
+                        <ComboBox SelectedValue="{Binding Settings.Configuration.DefaultSettings.HashAlgorithm}" 
+                                  SelectedValuePath="Tag"
+                                  Margin="0,0,0,10">
+                            <ComboBoxItem Content="sha256" Tag="sha256"/>
+                            <ComboBoxItem Content="sha384" Tag="sha384"/>
+                            <ComboBoxItem Content="sha512" Tag="sha512"/>
+                        </ComboBox>
+                        <CheckBox Content="Require password confirmation" 
+                                  IsChecked="{Binding Settings.Configuration.DefaultSettings.RequirePasswordConfirmation}"
+                                  Margin="0,0,0,10"/>
+                        <CheckBox Content="Auto-cleanup temporary files" 
+                                  IsChecked="{Binding Settings.Configuration.DefaultSettings.AutoCleanup}"
+                                  Margin="0,0,0,15"/>
+
+                        <!-- Logging Settings -->
+                        <TextBlock Text="Logging" Style="{StaticResource SectionTextStyle}"/>
+                        <TextBlock Text="Log Level:" Margin="0,5,0,2" FontWeight="SemiBold"/>
+                        <ComboBox SelectedValue="{Binding Settings.Configuration.Logging.LogLevel}" 
+                                  SelectedValuePath="Tag"
+                                  Margin="0,0,0,10">
+                            <ComboBoxItem Content="Trace" Tag="{x:Static enums:LogLevel.Trace}"/>
+                            <ComboBoxItem Content="Debug" Tag="{x:Static enums:LogLevel.Debug}"/>
+                            <ComboBoxItem Content="Information" Tag="{x:Static enums:LogLevel.Information}"/>
+                            <ComboBoxItem Content="Warning" Tag="{x:Static enums:LogLevel.Warning}"/>
+                            <ComboBoxItem Content="Error" Tag="{x:Static enums:LogLevel.Error}"/>
+                            <ComboBoxItem Content="Fatal" Tag="{x:Static enums:LogLevel.Fatal}"/>
+                        </ComboBox>
+                        <CheckBox Content="Log to file" 
+                                  IsChecked="{Binding Settings.Configuration.Logging.LogToFile}"
+                                  Margin="0,0,0,10"/>
+                        <CheckBox Content="Log to console" 
+                                  IsChecked="{Binding Settings.Configuration.Logging.LogToConsole}"
+                                  Margin="0,0,0,15"/>
+
+                        <!-- Action Buttons -->
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Save" 
+                                    Command="{Binding Settings.SaveCommand}"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Margin="0,0,10,0"/>
+                            <Button Content="Reset" 
+                                    Command="{Binding Settings.ResetCommand}"
+                                    Style="{StaticResource SecondaryButtonStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="3" Background="#F8F9FA" BorderBrush="#E9ECEF" BorderThickness="0,1,0,0" Padding="20,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" 
+                           Text="{Binding StatusMessage}" 
+                           VerticalAlignment="Center"/>
+                
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="Generate Certificate" 
+                            Command="{Binding GenerateCertificateCommand}"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            IsEnabled="{Binding CertificateRequest.CanGenerate}"
+                            Margin="0,0,10,0"/>
+                    <Button Content="Hide Settings" 
+                            Command="{Binding HideSettingsCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Visibility="{Binding ShowSettings, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
