@@ -167,7 +167,7 @@ jobs:
       - name: Build Inno Setup Installer
         run: |
           $env:Path += ";C:\Program Files (x86)\Inno Setup 6"
-          ISCC.exe "ZLGetCertSetup.iss" /DMyAppVersion="${{ env.APP_VERSION }}" /DZLGetCertBin="${{ env.ZLGetCertBin }}" > "${{ env.ARTIFACTS_DIR }}\iscc.log" 2>&1
+          ISCC.exe "ZLGetCertSetup.iss" /DMyAppVersion="${{ env.APP_VERSION }}" > "${{ env.ARTIFACTS_DIR }}\iscc.log" 2>&1
           if ($LASTEXITCODE -ne 0) {
             Get-Content "${{ env.ARTIFACTS_DIR }}\iscc.log"
             exit $LASTEXITCODE
