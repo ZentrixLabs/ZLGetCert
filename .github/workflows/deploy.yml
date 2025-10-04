@@ -164,12 +164,12 @@ jobs:
           foreach ($path in $possiblePaths) {
             Write-Host "Checking: $path"
             if (Test-Path $path) {
-              Write-Host "✓ Found icon file at: $path"
+              Write-Host "Found icon file at: $path"
               $fileInfo = Get-Item $path
               Write-Host "  Size: $($fileInfo.Length) bytes"
               Write-Host "  Last modified: $($fileInfo.LastWriteTime)"
             } else {
-              Write-Host "✗ Not found at: $path"
+              Write-Host "Not found at: $path"
             }
           }
           
