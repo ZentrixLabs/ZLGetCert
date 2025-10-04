@@ -1,0 +1,292 @@
+name: Build, Sign, and Release ZLGetCert
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  actions: read
+  contents: write
+  packages: write
+  id-token: write
+
+env:
+  SIGN_CODE: false # Disable code signing temporarily
+  BASE_DIR: ${{ github.workspace }}
+  ARTIFACTS_DIR: ${{ github.workspace }}\artifacts
+  TEMP_DIR: ${{ github.workspace }}\artifacts\temp
+  SolutionPath: ${{ github.workspace }}\ZLGetCert.sln
+  ZLGetCertBin: ${{ github.workspace }}\ZLGetCert\bin\Release\net48
+  ZLGetCertExe: ${{ github.workspace }}\ZLGetCert\bin\Release\net48\ZLGetCert.exe
+  ZLGetCertInstallerExe: ${{ github.workspace }}\artifacts\ZLGetCertInstaller.exe
+  RCEDIT_PATH: ${{ github.workspace }}\tools\rcedit\rcedit-x64.exe
+
+jobs:
+  build-sign-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        run: |
+          $version = "${{ github.ref_name }}"
+          $version = $version -replace '^v', ''
+          echo "APP_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+        shell: powershell
+
+      - name: Debug APP_VERSION
+        run: echo "APP_VERSION is ${{ env.APP_VERSION }}"
+        shell: powershell
+
+
+      - name: Verify solution file exists
+        run: |
+          if (Test-Path "${{ env.SolutionPath }}") {
+            Write-Output "Solution file exists at ${{ env.SolutionPath }}"
+          } else {
+            Write-Error "Solution file does not exist at ${{ env.SolutionPath }}"
+            exit 1
+          }
+        shell: powershell
+
+      - name: Download NuGet CLI
+        run: |
+          Invoke-WebRequest -Uri https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile nuget.exe
+        shell: powershell
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Create artifacts directory
+        run: New-Item -ItemType Directory -Force -Path "${{ env.ARTIFACTS_DIR }}"
+        shell: powershell
+
+      - name: Create temp directory for signing
+        run: New-Item -ItemType Directory -Force -Path "${{ env.TEMP_DIR }}"
+        shell: powershell
+
+      - name: Create tools directory for rcedit
+        run: New-Item -ItemType Directory -Force -Path "tools\rcedit"
+        shell: powershell
+
+      - name: Download rcedit
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/electron/rcedit/releases/download/v1.1.1/rcedit-x64.exe" -OutFile "${{ env.RCEDIT_PATH }}"
+        shell: powershell
+
+      - name: Restore NuGet packages with nuget.exe
+        run: |
+          .\nuget.exe restore "${{ env.SolutionPath }}" -Verbosity detailed
+        shell: powershell
+        continue-on-error: true
+
+      - name: Restore NuGet packages with msbuild
+        run: msbuild "${{ env.SolutionPath }}" -t:Restore -p:Configuration=Release -p:Platform="Any CPU"
+        shell: powershell
+
+      - name: Build ZLGetCert
+        run: msbuild "${{ env.SolutionPath }}" /p:Configuration=Release /p:Platform="Any CPU"
+        shell: powershell
+
+
+      - name: Debug build output directory before stamping
+        run: dir "${{ env.ZLGetCertBin }}" -Recurse
+        shell: powershell
+        continue-on-error: true
+
+      - name: Stamp version into ZLGetCert.exe
+        run: |
+          & "${{ env.RCEDIT_PATH }}" "${{ env.ZLGetCertExe }}" --set-version-string "ProductVersion" "${{ env.APP_VERSION }}"
+          & "${{ env.RCEDIT_PATH }}" "${{ env.ZLGetCertExe }}" --set-version-string "FileVersion" "${{ env.APP_VERSION }}"
+        shell: powershell
+
+      - name: Rebuild ZLGetCert project after stamping
+        run: msbuild "ZLGetCert\ZLGetCert.csproj" /p:Configuration=Release /p:Platform="Any CPU"
+        shell: powershell
+
+      - name: Conditionally sign ZLGetCert.exe
+        if: env.SIGN_CODE == 'true'
+        uses: sslcom/esigner-codesign@develop
+        with:
+          command: sign
+          username: ${{ secrets.CODESIGN_USERNAME }}
+          password: ${{ secrets.CODESIGN_PASSWORD }}
+          credential_id: ${{ secrets.CODESIGN_CREDENTIAL_ID }}
+          totp_secret: ${{ secrets.CODESIGN_TOTP_SECRET }}
+          file_path: ${{ env.ZLGetCertExe }}
+          output_path: ${{ env.TEMP_DIR }}
+          environment_name: PROD
+          signing_method: v2
+          malware_block: false
+        timeout-minutes: 10
+
+      - name: Debug CodeSignTool version and output
+        if: failure() && env.SIGN_CODE == 'true'
+        run: |
+          Write-Host "Code signing failed for ZLGetCert.exe"
+          Write-Host "Checking if file exists: ${{ env.ZLGetCertExe }}"
+          if (Test-Path "${{ env.ZLGetCertExe }}") {
+            Write-Host "File exists, size: $((Get-Item '${{ env.ZLGetCertExe }}').Length) bytes"
+          } else {
+            Write-Host "File does not exist"
+          }
+        shell: powershell
+        continue-on-error: true
+
+      - name: Replace ZLGetCert.exe with signed version
+        if: env.SIGN_CODE == 'true'
+        run: Copy-Item "${{ env.TEMP_DIR }}\ZLGetCert.exe" "${{ env.ZLGetCertExe }}" -Force
+        shell: powershell
+
+      - name: Download and Install Inno Setup
+        run: |
+          Invoke-WebRequest -Uri https://jrsoftware.org/download.php/is.exe -OutFile inno-setup-installer.exe
+          Start-Process -FilePath .\inno-setup-installer.exe -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" -Wait
+        shell: powershell
+
+      - name: Copy ZLGetCert_icon_v2.ico to working directory
+        run: Copy-Item "ZLGetCert\ZLGetCert_icon_v2.ico" -Destination "ZLGetCert_icon_v2.ico"
+        shell: powershell
+
+      - name: Delay to ensure build outputs are accessible
+        run: Start-Sleep -Seconds 5
+        shell: powershell
+
+      - name: Verify ZLGetCert_icon_v2.ico exists in working directory
+        run: |
+          if (Test-Path "ZLGetCert_icon_v2.ico") {
+            Write-Output "ZLGetCert_icon_v2.ico exists in working directory"
+          } else {
+            Write-Error "ZLGetCert_icon_v2.ico does not exist in working directory"
+            exit 1
+          }
+        shell: powershell
+
+      - name: Build Inno Setup Installer
+        run: |
+          $env:Path += ";C:\Program Files (x86)\Inno Setup 6"
+          ISCC.exe "ZLGetCertSetup.iss" /DMyAppVersion="${{ env.APP_VERSION }}" /DZLGetCertBin="${{ env.ZLGetCertBin }}" > "${{ env.ARTIFACTS_DIR }}\iscc.log" 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            Get-Content "${{ env.ARTIFACTS_DIR }}\iscc.log"
+            exit $LASTEXITCODE
+          }
+        shell: powershell
+
+      - name: Debug artifacts directory
+        run: dir "${{ env.ARTIFACTS_DIR }}" -Recurse
+        shell: powershell
+        continue-on-error: true
+
+      - name: Conditionally sign ZLGetCertInstaller.exe
+        if: env.SIGN_CODE == 'true'
+        uses: sslcom/esigner-codesign@develop
+        with:
+          command: sign
+          username: ${{ secrets.CODESIGN_USERNAME }}
+          password: ${{ secrets.CODESIGN_PASSWORD }}
+          credential_id: ${{ secrets.CODESIGN_CREDENTIAL_ID }}
+          totp_secret: ${{ secrets.CODESIGN_TOTP_SECRET }}
+          file_path: ${{ env.ZLGetCertInstallerExe }}
+          output_path: ${{ env.TEMP_DIR }}
+          environment_name: PROD
+          signing_method: v2
+          malware_block: false
+        timeout-minutes: 10
+
+      - name: Debug CodeSignTool version and output (ZLGetCertInstaller)
+        if: failure() && env.SIGN_CODE == 'true'
+        run: |
+          Write-Host "Code signing failed for ZLGetCertInstaller.exe"
+          Write-Host "Checking if file exists: ${{ env.ZLGetCertInstallerExe }}"
+          if (Test-Path "${{ env.ZLGetCertInstallerExe }}") {
+            Write-Host "File exists, size: $((Get-Item '${{ env.ZLGetCertInstallerExe }}').Length) bytes"
+          } else {
+            Write-Host "File does not exist"
+          }
+        shell: powershell
+        continue-on-error: true
+
+      - name: Replace ZLGetCertInstaller.exe with signed version
+        if: env.SIGN_CODE == 'true'
+        run: Copy-Item "${{ env.TEMP_DIR }}\ZLGetCertInstaller.exe" "${{ env.ZLGetCertInstallerExe }}" -Force
+        shell: powershell
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZLGetCert-Installer
+          path: ${{ env.ZLGetCertInstallerExe }}
+          retention-days: 7
+
+  release:
+    needs: build-sign-release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ZLGetCert-Installer
+          path: artifacts
+
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          # Get the previous tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          
+          # Generate changelog from commits
+          if [ -n "$PREVIOUS_TAG" ]; then
+            echo "## What's New in ${{ github.ref_name }}" > release_notes.md
+            echo "" >> release_notes.md
+            echo "### 🚀 New Features" >> release_notes.md
+            git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD --grep="feat:" --grep="feature:" --grep="add:" --grep="new:" | sed 's/^feat: //' | sed 's/^feature: //' | sed 's/^add: //' | sed 's/^new: //' >> release_notes.md || echo "- No new features" >> release_notes.md
+            echo "" >> release_notes.md
+            echo "### 🐛 Bug Fixes" >> release_notes.md
+            git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD --grep="fix:" --grep="bug:" --grep="issue:" | sed 's/^fix: //' | sed 's/^bug: //' | sed 's/^issue: //' >> release_notes.md || echo "- No bug fixes" >> release_notes.md
+            echo "" >> release_notes.md
+            echo "### 🔧 Improvements" >> release_notes.md
+            git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD --grep="improve:" --grep="enhance:" --grep="update:" --grep="refactor:" | sed 's/^improve: //' | sed 's/^enhance: //' | sed 's/^update: //' | sed 's/^refactor: //' >> release_notes.md || echo "- No improvements" >> release_notes.md
+            echo "" >> release_notes.md
+            echo "### 📝 Documentation" >> release_notes.md
+            git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD --grep="docs:" --grep="doc:" --grep="readme:" | sed 's/^docs: //' | sed 's/^doc: //' | sed 's/^readme: //' >> release_notes.md || echo "- No documentation updates" >> release_notes.md
+            echo "" >> release_notes.md
+            echo "### 🔄 All Changes" >> release_notes.md
+            git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD >> release_notes.md
+          else
+            echo "## Initial Release - ${{ github.ref_name }}" > release_notes.md
+            echo "" >> release_notes.md
+            echo "🎉 Welcome to ZLGetCert! This is the initial release of our certificate management application." >> release_notes.md
+            echo "" >> release_notes.md
+            echo "### ✨ Features" >> release_notes.md
+            echo "- Modern WPF interface with card-based UI" >> release_notes.md
+            echo "- Support for Standard, Wildcard, and CSR-based certificates" >> release_notes.md
+            echo "- Comprehensive configuration management" >> release_notes.md
+            echo "- Real-time JSON validation" >> release_notes.md
+            echo "- Built-in Users Guide" >> release_notes.md
+            echo "- OpenSSL integration" >> release_notes.md
+            echo "- Secure password handling" >> release_notes.md
+            echo "" >> release_notes.md
+            echo "### 📋 Requirements" >> release_notes.md
+            echo "- Windows Server 2016 or later" >> release_notes.md
+            echo "- .NET Framework 4.8" >> release_notes.md
+            echo "- Administrator privileges" >> release_notes.md
+          fi
+          
+          # Output the release notes
+          cat release_notes.md
+          echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/ZLGetCertInstaller.exe
+          body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
