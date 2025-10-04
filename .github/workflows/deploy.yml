@@ -90,11 +90,11 @@ jobs:
         continue-on-error: true
 
       - name: Restore NuGet packages with msbuild
-        run: msbuild "${{ env.SolutionPath }}" -t:Restore -p:Configuration=Release -p:Platform=x64
+        run: msbuild "${{ env.SolutionPath }}" -t:Restore -p:Configuration=Release -p:Platform="Any CPU"
         shell: powershell
 
       - name: Build ZLGetCert
-        run: msbuild "${{ env.SolutionPath }}" /p:Configuration=Release /p:Platform=x64
+        run: msbuild "${{ env.SolutionPath }}" /p:Configuration=Release /p:Platform="Any CPU"
         shell: powershell
 
       - name: Debug build output directory before stamping
@@ -109,7 +109,7 @@ jobs:
         shell: powershell
 
       - name: Rebuild ZLGetCert project after stamping
-        run: msbuild "${{ env.SolutionPath }}" /p:Configuration=Release /p:Platform=x64
+        run: msbuild "${{ env.SolutionPath }}" /p:Configuration=Release /p:Platform="Any CPU"
         shell: powershell
 
       - name: Conditionally sign ZLGetCert.exe
