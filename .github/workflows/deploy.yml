@@ -17,8 +17,8 @@ env:
   ARTIFACTS_DIR: ${{ github.workspace }}\artifacts
   TEMP_DIR: ${{ github.workspace }}\artifacts\temp
   SolutionPath: ${{ github.workspace }}\ZLGetCert.sln
-  ZLGetCertBin: ${{ github.workspace }}\ZLGetCert\bin\Release
-  ZLGetCertExe: ${{ github.workspace }}\ZLGetCert\bin\Release\ZLGetCert.exe
+  ZLGetCertBin: ${{ github.workspace }}\ZLGetCert\ZLGetCert\bin\Release
+  ZLGetCertExe: ${{ github.workspace }}\ZLGetCert\ZLGetCert\bin\Release\ZLGetCert.exe
   ZLGetCertInstallerExe: ${{ github.workspace }}\artifacts\ZLGetCertInstaller.exe
   RCEDIT_PATH: ${{ github.workspace }}\tools\rcedit\rcedit-x64.exe
 
@@ -109,7 +109,7 @@ jobs:
         shell: powershell
 
       - name: Rebuild ZLGetCert project after stamping
-        run: msbuild "ZLGetCert\ZLGetCert.csproj" /p:Configuration=Release /p:Platform="Any CPU"
+        run: msbuild "${{ env.SolutionPath }}" /p:Configuration=Release /p:Platform="Any CPU"
         shell: powershell
 
       - name: Conditionally sign ZLGetCert.exe
@@ -153,7 +153,7 @@ jobs:
         shell: powershell
 
       - name: Copy ZLGetCert_icon_v2.ico to working directory
-        run: Copy-Item "ZLGetCert\ZLGetCert_icon_v2.ico" -Destination "ZLGetCert_icon_v2.ico"
+        run: Copy-Item "ZLGetCert\ZLGetCert\ZLGetCert_icon_v2.ico" -Destination "ZLGetCert_icon_v2.ico"
         shell: powershell
 
       - name: Delay to ensure build outputs are accessible
