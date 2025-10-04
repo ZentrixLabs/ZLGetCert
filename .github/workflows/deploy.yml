@@ -152,8 +152,34 @@ jobs:
           Start-Process -FilePath .\inno-setup-installer.exe -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" -Wait
         shell: powershell
 
+      - name: Debug - Check if icon file exists before copying
+        run: |
+          Write-Host "Checking for icon file in various locations..."
+          $possiblePaths = @(
+            "${{ github.workspace }}\ZLGetCert\ZLGetCert\ZLGetCert_icon_v2.ico",
+            "ZLGetCert\ZLGetCert\ZLGetCert_icon_v2.ico",
+            "\ZLGetCert\ZLGetCert\ZLGetCert_icon_v2.ico"
+          )
+          
+          foreach ($path in $possiblePaths) {
+            Write-Host "Checking: $path"
+            if (Test-Path $path) {
+              Write-Host "✓ Found icon file at: $path"
+              $fileInfo = Get-Item $path
+              Write-Host "  Size: $($fileInfo.Length) bytes"
+              Write-Host "  Last modified: $($fileInfo.LastWriteTime)"
+            } else {
+              Write-Host "✗ Not found at: $path"
+            }
+          }
+          
+          Write-Host "Current working directory: $(Get-Location)"
+          Write-Host "Contents of current directory:"
+          Get-ChildItem | Format-Table Name, Length, LastWriteTime
+        shell: powershell
+
       - name: Copy ZLGetCert_icon_v2.ico to working directory
-        run: Copy-Item "\ZLGetCert\ZLGetCert\ZLGetCert_icon_v2.ico" -Destination "ZLGetCert_icon_v2.ico"
+        run: Copy-Item "${{ github.workspace }}\ZLGetCert\ZLGetCert\ZLGetCert_icon_v2.ico" -Destination "ZLGetCert_icon_v2.ico"
         shell: powershell
 
       - name: Delay to ensure build outputs are accessible
