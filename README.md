@@ -1,5 +1,9 @@
 # ZLGetCert
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.8-blue.svg)](https://dotnet.microsoft.com/download/dotnet-framework)
+[![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
+
 A modern Windows WPF application that simplifies certificate requests from on-premises Certificate Authority (CA) without requiring PowerShell or command-line expertise. Features a clean, card-based UI with comprehensive configuration management.
 
 ## Features
@@ -23,11 +27,25 @@ A modern Windows WPF application that simplifies certificate requests from on-pr
 - **OpenSSL for Windows** (optional, for PEM/KEY extraction)
 - **Administrator privileges** (for certificate store operations)
 
+## Quick Start
+
+1. **Download**: Clone or download the repository
+2. **Build**: Open `ZLGetCert.sln` in Visual Studio and build the solution
+3. **Configure**: Run the application and configure your CA settings via Edit → Settings
+4. **Generate**: Create your first certificate using the intuitive interface
+
 ## Installation
 
+### Prerequisites
+- Windows Server 2016 or later
+- .NET Framework 4.8
+- Visual Studio 2019 or later (for building from source)
+
+### From Source
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-org/ZLGetCert.git
+   git clone https://github.com/ZentrixLabs/ZLGetCert.git
+   cd ZLGetCert
    ```
 
 2. Open `ZLGetCert.sln` in Visual Studio 2019 or later
@@ -38,6 +56,9 @@ A modern Windows WPF application that simplifies certificate requests from on-pr
    ```
 
 4. Run the application from `ZLGetCert\bin\Release\ZLGetCert.exe`
+
+### Pre-built Binaries
+Download the latest release from the [Releases](https://github.com/ZentrixLabs/ZLGetCert/releases) page.
 
 ## Configuration
 
@@ -206,11 +227,31 @@ The application uses modern WPF patterns:
 
 ## Contributing
 
+We welcome contributions! Please follow these steps:
+
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
 4. Add tests for new functionality
-5. Submit a pull request
+5. Commit your changes (`git commit -m 'Add some amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+### Development Guidelines
+
+- Follow the existing code style and patterns
+- Add appropriate error handling and logging
+- Update documentation for new features
+- Test your changes thoroughly
+- Ensure all existing tests pass
+
+## Roadmap
+
+- [ ] Support for additional certificate types
+- [ ] Enhanced OpenSSL integration
+- [ ] Certificate renewal automation
+- [ ] Multi-language support
+- [ ] Plugin architecture for custom validators
 
 ## License
 
