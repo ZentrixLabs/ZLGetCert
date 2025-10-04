@@ -17,8 +17,8 @@ env:
   ARTIFACTS_DIR: ${{ github.workspace }}\artifacts
   TEMP_DIR: ${{ github.workspace }}\artifacts\temp
   SolutionPath: ${{ github.workspace }}\ZLGetCert.sln
-  ZLGetCertBin: ${{ github.workspace }}\ZLGetCert\ZLGetCert\bin\Release
-  ZLGetCertExe: ${{ github.workspace }}\ZLGetCert\ZLGetCert\bin\Release\ZLGetCert.exe
+  ZLGetCertBin: ${{ github.workspace }}\ZLGetCert\bin\Release
+  ZLGetCertExe: ${{ github.workspace }}\ZLGetCert\bin\Release\ZLGetCert.exe
   ZLGetCertInstallerExe: ${{ github.workspace }}\artifacts\ZLGetCertInstaller.exe
   RCEDIT_PATH: ${{ github.workspace }}\tools\rcedit\rcedit-x64.exe
 
