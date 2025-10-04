@@ -179,7 +179,7 @@ jobs:
         shell: powershell
 
       - name: Copy ZLGetCert_icon_v2.ico to working directory
-        run: Copy-Item "${{ github.workspace }}\ZLGetCert\ZLGetCert\ZLGetCert_icon_v2.ico" -Destination "ZLGetCert_icon_v2.ico"
+        run: Copy-Item "${{ github.workspace }}\ZLGetCert\ZLGetCert_icon_v2.ico" -Destination "ZLGetCert_icon_v2.ico"
         shell: powershell
 
       - name: Delay to ensure build outputs are accessible
