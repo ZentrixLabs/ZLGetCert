@@ -172,8 +172,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="ZLGetCert_icon_v2_1024.png" />
-    <Resource Include="ZLLogo.png" />
-    <Resource Include="ZLGetCert_icon_v2.ico" />
+    <Resource Include="ZLLogo.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="ZLGetCert_icon_v2.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
