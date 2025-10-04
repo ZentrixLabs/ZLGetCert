@@ -84,6 +84,14 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Views\ConfigurationEditorView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\UsersGuideView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App.xaml.cs">
@@ -130,6 +138,14 @@
     <Compile Include="Converters\EnumToBoolConverter.cs" />
     <Compile Include="Converters\BoolToVisibilityConverter.cs" />
     <Compile Include="Converters\InverseBoolConverter.cs" />
+    <Compile Include="Views\ConfigurationEditorView.xaml.cs">
+      <DependentUpon>ConfigurationEditorView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\UsersGuideView.xaml.cs">
+      <DependentUpon>UsersGuideView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ViewModels\ConfigurationEditorViewModel.cs" />
+    <Compile Include="ViewModels\UsersGuideViewModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Styles\CommonStyles.xaml" />

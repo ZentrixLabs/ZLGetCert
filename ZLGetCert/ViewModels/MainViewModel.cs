@@ -6,6 +6,7 @@ using ZLGetCert.Models;
 using ZLGetCert.Services;
 using ZLGetCert.Utilities;
 using ZLGetCert.Enums;
+using ZLGetCert.Views;
 
 namespace ZLGetCert.ViewModels
 {
@@ -48,6 +49,8 @@ namespace ZLGetCert.ViewModels
             AddIpSanCommand = new RelayCommand(AddIpSan);
             RemoveDnsSanCommand = new RelayCommand<SanEntry>(RemoveDnsSan);
             RemoveIpSanCommand = new RelayCommand<SanEntry>(RemoveIpSan);
+            OpenConfigurationEditorCommand = new RelayCommand(OpenConfigurationEditor);
+            OpenUsersGuideCommand = new RelayCommand(OpenUsersGuide);
 
             // Initialize properties
             _statusMessage = "Ready to generate certificate";
@@ -166,6 +169,16 @@ namespace ZLGetCert.ViewModels
         public ICommand RemoveIpSanCommand { get; }
 
         /// <summary>
+        /// Open configuration editor command
+        /// </summary>
+        public ICommand OpenConfigurationEditorCommand { get; }
+
+        /// <summary>
+        /// Open users guide command
+        /// </summary>
+        public ICommand OpenUsersGuideCommand { get; }
+
+        /// <summary>
         /// Load configuration and update UI
         /// </summary>
         private void LoadConfiguration()
@@ -272,6 +285,46 @@ namespace ZLGetCert.ViewModels
             CertificateRequest.Clear();
             CurrentCertificate = null;
             StatusMessage = "Form cleared";
+        }
+
+        /// <summary>
+        /// Open configuration editor window
+        /// </summary>
+        private void OpenConfigurationEditor()
+        {
+            try
+            {
+                var editorWindow = new Views.ConfigurationEditorView();
+                editorWindow.DataContext = new ConfigurationEditorViewModel();
+                editorWindow.Owner = System.Windows.Application.Current.MainWindow;
+                editorWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error opening configuration editor");
+                System.Windows.MessageBox.Show($"Error opening configuration editor: {ex.Message}", 
+                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Open users guide window
+        /// </summary>
+        private void OpenUsersGuide()
+        {
+            try
+            {
+                var guideWindow = new Views.UsersGuideView();
+                guideWindow.DataContext = new UsersGuideViewModel();
+                guideWindow.Owner = System.Windows.Application.Current.MainWindow;
+                guideWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error opening users guide");
+                System.Windows.MessageBox.Show($"Error opening users guide: {ex.Message}", 
+                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
         }
 
         /// <summary>

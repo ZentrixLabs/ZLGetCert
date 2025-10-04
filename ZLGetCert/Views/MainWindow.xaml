@@ -50,8 +50,10 @@
             </MenuItem>
             <MenuItem Header="_Edit">
                 <MenuItem Header="_Settings" Command="{Binding ShowSettingsCommand}"/>
+                <MenuItem Header="_Configuration Editor..." Command="{Binding OpenConfigurationEditorCommand}"/>
             </MenuItem>
             <MenuItem Header="_Help">
+                <MenuItem Header="_Users Guide" Command="{Binding OpenUsersGuideCommand}"/>
                 <MenuItem Header="_About" Click="About_Click"/>
             </MenuItem>
         </Menu>

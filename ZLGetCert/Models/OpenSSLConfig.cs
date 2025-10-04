@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace ZLGetCert.Models
@@ -11,6 +12,7 @@ namespace ZLGetCert.Models
         private bool _autoDetect;
         private bool _isAvailable;
         private string _version;
+        private List<string> _commonPaths;
 
         /// <summary>
         /// Path to OpenSSL executable
@@ -61,6 +63,19 @@ namespace ZLGetCert.Models
             {
                 _version = value;
                 OnPropertyChanged(nameof(Version));
+            }
+        }
+
+        /// <summary>
+        /// Common paths where OpenSSL might be installed
+        /// </summary>
+        public List<string> CommonPaths
+        {
+            get => _commonPaths;
+            set
+            {
+                _commonPaths = value;
+                OnPropertyChanged(nameof(CommonPaths));
             }
         }
 

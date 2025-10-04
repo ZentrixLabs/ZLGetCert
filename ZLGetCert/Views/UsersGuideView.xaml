@@ -1,0 +1,278 @@
+<Window x:Class="ZLGetCert.Views.UsersGuideView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ZLGetCert Users Guide" 
+        Height="700" 
+        Width="900"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        Icon="../ZLGetCert_icon_v2.ico">
+    
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../Styles/CommonStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            
+            <Style x:Key="GuideHeaderStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="24"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="Foreground" Value="#1F2937"/>
+                <Setter Property="Margin" Value="0,0,0,20"/>
+            </Style>
+            
+            <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="18"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="#374151"/>
+                <Setter Property="Margin" Value="0,20,0,10"/>
+            </Style>
+            
+            <Style x:Key="SubSectionHeaderStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="#4B5563"/>
+                <Setter Property="Margin" Value="0,15,0,8"/>
+            </Style>
+            
+            <Style x:Key="GuideTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="Foreground" Value="#374151"/>
+                <Setter Property="Margin" Value="0,5,0,5"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
+            
+            <Style x:Key="StepTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="Foreground" Value="#374151"/>
+                <Setter Property="Margin" Value="20,3,0,3"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
+            
+            <Style x:Key="CodeTextStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="Consolas"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Foreground" Value="#1F2937"/>
+                <Setter Property="Background" Value="#F3F4F6"/>
+                <Setter Property="Padding" Value="8,4"/>
+                <Setter Property="Margin" Value="0,5,0,5"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
+            
+            <Style x:Key="WarningBoxStyle" TargetType="Border">
+                <Setter Property="Background" Value="#FEF3C7"/>
+                <Setter Property="BorderBrush" Value="#F59E0B"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="4"/>
+                <Setter Property="Padding" Value="12"/>
+                <Setter Property="Margin" Value="0,10,0,10"/>
+            </Style>
+            
+            <Style x:Key="InfoBoxStyle" TargetType="Border">
+                <Setter Property="Background" Value="#DBEAFE"/>
+                <Setter Property="BorderBrush" Value="#3B82F6"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="4"/>
+                <Setter Property="Padding" Value="12"/>
+                <Setter Property="Margin" Value="0,10,0,10"/>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#F8F9FA" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1" Padding="20,15">
+            <StackPanel>
+                <TextBlock Text="📖 ZLGetCert Users Guide" Style="{StaticResource GuideHeaderStyle}"/>
+                <TextBlock Text="Complete guide to using ZLGetCert for certificate management" 
+                           Style="{StaticResource GuideTextStyle}"/>
+            </StackPanel>
+        </Border>
+        
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="20">
+            <StackPanel>
+                
+                <!-- Getting Started -->
+                <TextBlock Text="Getting Started" Style="{StaticResource SectionHeaderStyle}"/>
+                <TextBlock Text="ZLGetCert is a Windows application that simplifies certificate requests from on-premises Certificate Authority (CA) without requiring PowerShell or command-line expertise." 
+                           Style="{StaticResource GuideTextStyle}"/>
+                
+                <Border Style="{StaticResource InfoBoxStyle}">
+                    <StackPanel>
+                        <TextBlock Text="💡 Prerequisites" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                        <TextBlock Text="• Windows Server 2016 or later" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• .NET Framework 4.8" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• Administrator privileges (for certificate store operations)" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• OpenSSL for Windows (optional, for PEM/KEY extraction)" Style="{StaticResource StepTextStyle}"/>
+                    </StackPanel>
+                </Border>
+                
+                <!-- Configuration -->
+                <TextBlock Text="Configuration" Style="{StaticResource SectionHeaderStyle}"/>
+                <TextBlock Text="Before using ZLGetCert, you need to configure your Certificate Authority settings." 
+                           Style="{StaticResource GuideTextStyle}"/>
+                
+                <TextBlock Text="1. Access Settings" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="Click the ⚙️ Settings button in the top-right corner or go to Edit → Settings." 
+                           Style="{StaticResource StepTextStyle}"/>
+                
+                <TextBlock Text="2. Configure CA Settings" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="• Server: Enter your CA server hostname or IP address" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Template: Specify the certificate template (e.g., WebServer)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Default Company: Set your organization name" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Default OU: Set your organizational unit" Style="{StaticResource StepTextStyle}"/>
+                
+                <TextBlock Text="3. File Paths" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="• Certificate Folder: Where certificates will be saved" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Log Path: Where application logs are stored" Style="{StaticResource StepTextStyle}"/>
+                
+                <TextBlock Text="4. OpenSSL Integration (Optional)" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="• Enable auto-detection or specify the OpenSSL executable path" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• This allows extraction of PEM and KEY files from PFX certificates" Style="{StaticResource StepTextStyle}"/>
+                
+                <!-- Certificate Types -->
+                <TextBlock Text="Certificate Types" Style="{StaticResource SectionHeaderStyle}"/>
+                <TextBlock Text="ZLGetCert supports three types of certificate requests:" 
+                           Style="{StaticResource GuideTextStyle}"/>
+                
+                <TextBlock Text="Standard Certificate" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="For regular hostname certificates with multiple Subject Alternative Names (SANs)." 
+                           Style="{StaticResource GuideTextStyle}"/>
+                <TextBlock Text="1. Select 'Standard Certificate' radio button" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="2. Enter the primary hostname in the Domain field" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="3. Add additional SANs using the + buttons" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="4. Configure organization information" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="5. Set a secure PFX password" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="6. Click 'Generate Certificate'" Style="{StaticResource StepTextStyle}"/>
+                
+                <TextBlock Text="Wildcard Certificate" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="For wildcard domain certificates (*.domain.com)." 
+                           Style="{StaticResource GuideTextStyle}"/>
+                <TextBlock Text="1. Select 'Wildcard Certificate' radio button" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="2. Enter wildcard domain (e.g., *.example.com)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="3. Configure location and company details" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="4. Set a secure PFX password" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="5. Click 'Generate Certificate'" Style="{StaticResource StepTextStyle}"/>
+                
+                <TextBlock Text="From CSR" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="For submitting existing Certificate Signing Request files to your CA." 
+                           Style="{StaticResource GuideTextStyle}"/>
+                <TextBlock Text="1. Select 'From CSR' radio button" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="2. Click 'Browse' to select your CSR file" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="3. Set a secure PFX password" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="4. Click 'Generate Certificate'" Style="{StaticResource StepTextStyle}"/>
+                
+                <!-- Security Settings -->
+                <TextBlock Text="Security Settings" Style="{StaticResource SectionHeaderStyle}"/>
+                <TextBlock Text="Configure security options in the Settings panel:" 
+                           Style="{StaticResource GuideTextStyle}"/>
+                
+                <TextBlock Text="• Key Length: Choose 2048, 3072, or 4096 bits" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Hash Algorithm: Select SHA-256, SHA-384, or SHA-512" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Password Confirmation: Require password confirmation for security" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Auto-cleanup: Automatically remove temporary files" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Remember Password: Store password securely (not recommended for production)" Style="{StaticResource StepTextStyle}"/>
+                
+                <!-- Advanced Configuration -->
+                <TextBlock Text="Advanced Configuration" Style="{StaticResource SectionHeaderStyle}"/>
+                <TextBlock Text="For advanced users, you can edit the configuration file directly using the built-in Configuration Editor:" 
+                           Style="{StaticResource GuideTextStyle}"/>
+                
+                <TextBlock Text="1. Go to Edit → Configuration Editor..." Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="2. Edit the JSON configuration directly in the editor" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="3. Watch real-time validation feedback as you type" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="4. Fix any validation errors before saving" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="5. Apply changes and restart the application" Style="{StaticResource StepTextStyle}"/>
+                
+                <TextBlock Text="JSON Validator Features" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="The Configuration Editor includes a powerful JSON validator:" 
+                           Style="{StaticResource GuideTextStyle}"/>
+                
+                <TextBlock Text="• Real-time validation as you type" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Color-coded status indicators:" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="  - ✅ Green: Valid JSON - Ready to save" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="  - ⚠️ Yellow: Configuration issues - JSON valid but has problems" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="  - ❌ Red: Invalid JSON - Syntax errors detected" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Detailed error messages with specific validation issues" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Safety checks prevent saving invalid configurations" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Automatic validation of required fields and data types" Style="{StaticResource StepTextStyle}"/>
+                
+                <Border Style="{StaticResource WarningBoxStyle}">
+                    <StackPanel>
+                        <TextBlock Text="⚠️ Important" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                        <TextBlock Text="• Always backup your configuration before making changes" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• Invalid JSON will prevent the application from starting" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• Test changes in a development environment first" Style="{StaticResource StepTextStyle}"/>
+                    </StackPanel>
+                </Border>
+                
+                <!-- Troubleshooting -->
+                <TextBlock Text="Troubleshooting" Style="{StaticResource SectionHeaderStyle}"/>
+                
+                <TextBlock Text="Common Issues" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="• Certificate generation fails: Check CA server connectivity and credentials" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• OpenSSL not detected: Verify installation path in settings" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Permission errors: Run as Administrator" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Invalid configuration: Use Configuration Editor to validate JSON" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• JSON syntax errors: Use the Configuration Editor's real-time validator" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Missing required fields: Check the validation status for specific requirements" Style="{StaticResource StepTextStyle}"/>
+                
+                <TextBlock Text="Configuration Troubleshooting" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="If you encounter configuration issues:" 
+                           Style="{StaticResource GuideTextStyle}"/>
+                
+                <TextBlock Text="1. Open Configuration Editor (Edit → Configuration Editor...)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="2. Check the validation status indicator:" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="   - Red status: Fix JSON syntax errors first" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="   - Yellow status: Address missing or invalid configuration values" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="   - Green status: Configuration is valid and ready to use" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="3. Review error details for specific issues to fix" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="4. Test changes before applying to production" Style="{StaticResource StepTextStyle}"/>
+                
+                <TextBlock Text="Log Files" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="Check the log files in the configured log path for detailed error information:" 
+                           Style="{StaticResource GuideTextStyle}"/>
+                <TextBlock Text="Default location: C:\ProgramData\ZentrixLabs\ZLGetCert" 
+                           Style="{StaticResource CodeTextStyle}"/>
+                
+                <TextBlock Text="Support" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="• Check the logs for detailed error information" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Review the configuration in appsettings.json" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Create an issue in the GitHub repository" Style="{StaticResource StepTextStyle}"/>
+                
+                <!-- Keyboard Shortcuts -->
+                <TextBlock Text="Keyboard Shortcuts" Style="{StaticResource SectionHeaderStyle}"/>
+                <TextBlock Text="• Ctrl+N: New Certificate (clear form)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Ctrl+E: Open Settings" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• F1: Open Users Guide" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Alt+F4: Exit application" Style="{StaticResource StepTextStyle}"/>
+                
+                <TextBlock Text="Configuration Editor Shortcuts" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="• Ctrl+S: Save configuration to file" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Ctrl+O: Load configuration from file" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Ctrl+Z: Undo changes (if supported by editor)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• F5: Refresh validation status" Style="{StaticResource StepTextStyle}"/>
+                
+            </StackPanel>
+        </ScrollViewer>
+        
+        <!-- Footer -->
+        <Border Grid.Row="2" Background="#F8F9FA" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Padding="20,15">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="📖 Print Guide" 
+                        Command="{Binding PrintGuideCommand}"
+                        Style="{StaticResource SecondaryButtonStyle}"/>
+                <Button Content="❌ Close" 
+                        Command="{Binding CloseCommand}"
+                        Style="{StaticResource PrimaryButtonStyle}"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
