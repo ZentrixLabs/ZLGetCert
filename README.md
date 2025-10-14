@@ -75,6 +75,33 @@ This application intentionally targets **.NET Framework 4.8** rather than modern
 ### Pre-built Binaries
 Download the latest release from the [Releases](https://github.com/ZentrixLabs/ZLGetCert/releases) page.
 
+### Silent Installation (Enterprise Deployment)
+
+The installer supports silent installation for automated deployments via tools like PDQ Deploy, SCCM, or Group Policy:
+
+**Standard Silent Install (shows progress bar):**
+```cmd
+ZLGetCertInstaller.exe /SILENT /NORESTART
+```
+
+**Very Silent Install (no UI at all):**
+```cmd
+ZLGetCertInstaller.exe /VERYSILENT /NORESTART /SUPPRESSMSGBOXES
+```
+
+**Additional Options:**
+- `/DIR="C:\Custom\Path"` - Specify custom install directory
+- `/LOG="C:\Logs\install.log"` - Create installation log
+- `/NOICONS` - Don't create start menu icons
+- `/TASKS="desktopicon"` - Force create desktop icon
+
+**Example Enterprise Deployment:**
+```cmd
+ZLGetCertInstaller.exe /VERYSILENT /NORESTART /SUPPRESSMSGBOXES /LOG="C:\Windows\Temp\ZLGetCert_install.log"
+```
+
+The installer requires administrator privileges, so ensure your deployment tools run with appropriate credentials.
+
 ## Configuration
 
 The application uses `appsettings.json` for configuration. All UI options are dynamically loaded from configuration, eliminating hardcoded values:
