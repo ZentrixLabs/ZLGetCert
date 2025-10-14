@@ -1046,8 +1046,12 @@
 
         <!-- Settings panel removed - now opens in dedicated window -->
 
-        <!-- Status Bar -->
-        <Border Grid.Row="3" Background="#F8F9FA" BorderBrush="#E9ECEF" BorderThickness="0,1,0,0" Padding="20,15">
+        <!-- Status Bar (Color-Coded) -->
+        <Border Grid.Row="3" 
+                Background="{Binding StatusBarBackground}" 
+                BorderBrush="{Binding StatusBarBorderBrush}" 
+                BorderThickness="0,2,0,0" 
+                Padding="20,15">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -1055,10 +1059,17 @@
                 </Grid.ColumnDefinitions>
                 
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="📋 " FontSize="16" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                    <TextBlock Text="{Binding StatusIcon}" 
+                               FontSize="18" 
+                               VerticalAlignment="Center" 
+                               Margin="0,0,8,0"
+                               Foreground="{Binding StatusTextColor}"/>
                     <TextBlock Text="{Binding StatusMessage}" 
                                VerticalAlignment="Center"
-                               FontSize="13"/>
+                               FontSize="13"
+                               Foreground="{Binding StatusTextColor}"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"/>
                 </StackPanel>
                 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">

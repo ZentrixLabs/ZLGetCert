@@ -157,6 +157,7 @@
     <Compile Include="Utilities\PasswordBoxHelper.cs" />
     <Compile Include="Enums\CertificateType.cs" />
     <Compile Include="Enums\LogLevel.cs" />
+    <Compile Include="Enums\StatusMessageType.cs" />
     <Compile Include="Converters\EnumToBoolConverter.cs" />
     <Compile Include="Converters\BoolToVisibilityConverter.cs" />
     <Compile Include="Converters\InverseBoolConverter.cs" />

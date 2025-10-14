@@ -28,6 +28,7 @@ namespace ZLGetCert.ViewModels
         private CertificateInfo _currentCertificate;
         private bool _isGenerating;
         private string _statusMessage;
+        private StatusMessageType _statusMessageType;
 
         public MainViewModel()
         {
@@ -58,6 +59,7 @@ namespace ZLGetCert.ViewModels
 
             // Initialize properties
             _statusMessage = "Ready to generate certificate";
+            _statusMessageType = StatusMessageType.Info;
             _isGenerating = false;
 
             // Load configuration
@@ -115,11 +117,126 @@ namespace ZLGetCert.ViewModels
             set => SetProperty(ref _statusMessage, value);
         }
 
+        /// <summary>
+        /// Type of status message (for color coding)
+        /// </summary>
+        public StatusMessageType StatusMessageType
+        {
+            get => _statusMessageType;
+            set
+            {
+                if (SetProperty(ref _statusMessageType, value))
+                {
+                    OnPropertyChanged(nameof(StatusBarBackground));
+                    OnPropertyChanged(nameof(StatusBarBorderBrush));
+                    OnPropertyChanged(nameof(StatusIcon));
+                    OnPropertyChanged(nameof(StatusTextColor));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Status bar background color based on message type
+        /// </summary>
+        public string StatusBarBackground
+        {
+            get
+            {
+                switch (StatusMessageType)
+                {
+                    case StatusMessageType.Success:
+                        return "#D4EDDA"; // Light green
+                    case StatusMessageType.Error:
+                        return "#F8D7DA"; // Light red
+                    case StatusMessageType.Warning:
+                        return "#FFF3CD"; // Light yellow
+                    case StatusMessageType.Info:
+                    default:
+                        return "#F8F9FA"; // Light gray (default)
+                }
+            }
+        }
+
+        /// <summary>
+        /// Status bar border color based on message type
+        /// </summary>
+        public string StatusBarBorderBrush
+        {
+            get
+            {
+                switch (StatusMessageType)
+                {
+                    case StatusMessageType.Success:
+                        return "#28A745"; // Green
+                    case StatusMessageType.Error:
+                        return "#DC3545"; // Red
+                    case StatusMessageType.Warning:
+                        return "#FFC107"; // Yellow/Orange
+                    case StatusMessageType.Info:
+                    default:
+                        return "#E9ECEF"; // Light gray
+                }
+            }
+        }
+
+        /// <summary>
+        /// Status icon based on message type
+        /// </summary>
+        public string StatusIcon
+        {
+            get
+            {
+                switch (StatusMessageType)
+                {
+                    case StatusMessageType.Success:
+                        return "✓";
+                    case StatusMessageType.Error:
+                        return "⚠";
+                    case StatusMessageType.Warning:
+                        return "⚠";
+                    case StatusMessageType.Info:
+                    default:
+                        return "📋";
+                }
+            }
+        }
+
+        /// <summary>
+        /// Status text color based on message type
+        /// </summary>
+        public string StatusTextColor
+        {
+            get
+            {
+                switch (StatusMessageType)
+                {
+                    case StatusMessageType.Success:
+                        return "#155724"; // Dark green
+                    case StatusMessageType.Error:
+                        return "#721C24"; // Dark red
+                    case StatusMessageType.Warning:
+                        return "#856404"; // Dark yellow
+                    case StatusMessageType.Info:
+                    default:
+                        return "#383D41"; // Dark gray
+                }
+            }
+        }
+
 
         /// <summary>
         /// PEM/KEY export availability status (now always available using pure .NET)
         /// </summary>
         public string OpenSSLStatus => "PEM/KEY extraction available (built-in .NET)";
+
+        /// <summary>
+        /// Set status message with type for color coding
+        /// </summary>
+        private void SetStatus(string message, StatusMessageType type)
+        {
+            StatusMessage = message;
+            StatusMessageType = type;
+        }
 
         /// <summary>
         /// Generate certificate command
@@ -227,7 +344,7 @@ namespace ZLGetCert.ViewModels
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading configuration");
-                StatusMessage = "Error loading configuration";
+                SetStatus("Error loading configuration", StatusMessageType.Error);
             }
         }
 
@@ -239,17 +356,17 @@ namespace ZLGetCert.ViewModels
             try
             {
                 IsGenerating = true;
-                StatusMessage = "Validating certificate request...";
+                SetStatus("Validating certificate request...", StatusMessageType.Info);
 
                 // Validate the request
                 var validationResult = ValidationHelper.ValidateCertificateRequest(CertificateRequest.ToCertificateRequest());
                 if (!validationResult.IsValid)
                 {
-                    StatusMessage = $"Validation failed: {validationResult.GetMessage()}";
+                    SetStatus($"Validation failed: {validationResult.GetMessage()}", StatusMessageType.Error);
                     return;
                 }
 
-                StatusMessage = "Generating certificate...";
+                SetStatus("Generating certificate...", StatusMessageType.Info);
                 _logger.LogInfo("Starting certificate generation for {0}", CertificateRequest.CertificateName);
 
                 // Generate certificate
@@ -259,19 +376,19 @@ namespace ZLGetCert.ViewModels
                 if (certificate.IsValid)
                 {
                     CurrentCertificate = certificate;
-                    StatusMessage = $"Certificate generated successfully: {certificate.Subject}";
+                    SetStatus($"✓ Certificate generated successfully! Saved to: {certificate.PfxPath}", StatusMessageType.Success);
                     _logger.LogInfo("Certificate generated successfully: {0}", certificate.Thumbprint);
                 }
                 else
                 {
-                    StatusMessage = $"Certificate generation failed: {certificate.ErrorMessage}";
+                    SetStatus($"Certificate generation failed: {certificate.ErrorMessage}", StatusMessageType.Error);
                     _logger.LogError("Certificate generation failed: {0}", certificate.ErrorMessage);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating certificate");
-                StatusMessage = $"Error: {ex.Message}";
+                SetStatus($"Error: {ex.Message}", StatusMessageType.Error);
             }
             finally
             {
@@ -314,7 +431,7 @@ namespace ZLGetCert.ViewModels
         {
             CertificateRequest.Clear();
             CurrentCertificate = null;
-            StatusMessage = "Form cleared";
+            SetStatus("Form cleared - ready for new certificate request", StatusMessageType.Info);
         }
 
         /// <summary>
@@ -462,7 +579,10 @@ namespace ZLGetCert.ViewModels
                 if (inputWindow.ShowDialog() == true)
                 {
                     var count = CertificateRequest.BulkAddDnsSans(textBox.Text);
-                    StatusMessage = $"Added {count} DNS SAN(s)";
+                    if (count > 0)
+                        SetStatus($"✓ Successfully added {count} DNS SAN(s)", StatusMessageType.Success);
+                    else
+                        SetStatus("No valid DNS names found in the input", StatusMessageType.Warning);
                 }
             }
             catch (Exception ex)
@@ -546,7 +666,10 @@ namespace ZLGetCert.ViewModels
                 if (inputWindow.ShowDialog() == true)
                 {
                     var count = CertificateRequest.BulkAddIpSans(textBox.Text);
-                    StatusMessage = $"Added {count} IP SAN(s)";
+                    if (count > 0)
+                        SetStatus($"✓ Successfully added {count} IP SAN(s)", StatusMessageType.Success);
+                    else
+                        SetStatus("No valid IP addresses found in the input", StatusMessageType.Warning);
                 }
             }
             catch (Exception ex)
@@ -577,14 +700,14 @@ namespace ZLGetCert.ViewModels
                 // Save the updated configuration
                 _configService.SaveConfiguration(config);
                 
-                StatusMessage = "Default settings saved successfully";
+                SetStatus("✓ Default settings saved successfully", StatusMessageType.Success);
                 _logger.LogInfo("Default certificate settings saved: CA={0}, Template={1}, Company={2}, OU={3}, Location={4}, State={5}", 
                     CertificateRequest.CAServer, CertificateRequest.Template, CertificateRequest.Company, CertificateRequest.OU, 
                     CertificateRequest.Location, CertificateRequest.State);
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Failed to save defaults: {ex.Message}";
+                SetStatus($"Failed to save defaults: {ex.Message}", StatusMessageType.Error);
                 _logger.LogError(ex, "Failed to save default certificate settings");
             }
         }
