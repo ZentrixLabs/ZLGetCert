@@ -19,6 +19,9 @@
         <local:EnumToBoolConverter x:Key="EnumToBoolConverter"/>
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <local:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        <local:EmptyStringToVisibilityConverter x:Key="EmptyStringToVisibilityConverter"/>
+        <local:InverseEmptyStringToVisibilityConverter x:Key="InverseEmptyStringToVisibilityConverter"/>
+        <local:EmptyStringToBoolConverter x:Key="EmptyStringToBoolConverter"/>
         
         <Style x:Key="HeaderTextStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="18"/>
@@ -204,12 +207,27 @@
                                     <ComboBox.Style>
                                         <Style TargetType="ComboBox">
                                             <Setter Property="Foreground" Value="Black"/>
+                                            <Setter Property="BorderBrush" Value="#CED4DA"/>
+                                            <Setter Property="BorderThickness" Value="1"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CertificateRequest.CAServerError, Converter={StaticResource EmptyStringToBoolConverter}}" Value="False">
+                                                    <Setter Property="BorderBrush" Value="#DC3545"/>
+                                                    <Setter Property="BorderThickness" Value="2"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
                                         </Style>
                                     </ComboBox.Style>
                                 </ComboBox>
+                                <TextBlock Text="{Binding CertificateRequest.CAServerError}" 
+                                           FontSize="11"
+                                           Foreground="#DC3545"
+                                           FontWeight="SemiBold"
+                                           Margin="0,3,0,0"
+                                           Visibility="{Binding CertificateRequest.CAServerError, Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
                                 <TextBlock Text="Select from Active Directory CAs or type a custom server name" 
                                            Style="{StaticResource StatusTextStyle}"
-                                           Margin="0,2,0,0"/>
+                                           Margin="0,2,0,0"
+                                           Visibility="{Binding CertificateRequest.CAServerError, Converter={StaticResource InverseEmptyStringToVisibilityConverter}}"/>
                             </StackPanel>
                             
                             <StackPanel Style="{StaticResource FormGroupStyle}">
@@ -246,6 +264,14 @@
                                     <ComboBox.Style>
                                         <Style TargetType="ComboBox">
                                             <Setter Property="Foreground" Value="Black"/>
+                                            <Setter Property="BorderBrush" Value="#CED4DA"/>
+                                            <Setter Property="BorderThickness" Value="1"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CertificateRequest.TemplateError, Converter={StaticResource EmptyStringToBoolConverter}}" Value="False">
+                                                    <Setter Property="BorderBrush" Value="#DC3545"/>
+                                                    <Setter Property="BorderThickness" Value="2"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
                                         </Style>
                                     </ComboBox.Style>
                                     <ComboBox.ItemTemplate>
@@ -263,9 +289,16 @@
                                         </DataTemplate>
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
+                                <TextBlock Text="{Binding CertificateRequest.TemplateError}" 
+                                           FontSize="11"
+                                           Foreground="#DC3545"
+                                           FontWeight="SemiBold"
+                                           Margin="0,3,0,0"
+                                           Visibility="{Binding CertificateRequest.TemplateError, Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
                                 <TextBlock Text="Select from the list or type a custom template name" 
                                            Style="{StaticResource StatusTextStyle}"
-                                           Margin="0,2,0,0"/>
+                                           Margin="0,2,0,0"
+                                           Visibility="{Binding CertificateRequest.TemplateError, Converter={StaticResource InverseEmptyStringToVisibilityConverter}}"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -325,7 +358,26 @@
                                 <TextBlock Text="Hostname *" Style="{StaticResource FieldLabelStyle}"/>
                                 <TextBox Text="{Binding CertificateRequest.HostName}" 
                                          IsEnabled="{Binding CertificateRequest.IsWildcard, Converter={StaticResource InverseBoolConverter}}"
-                                         ToolTip="Required for standard certificates: Server hostname without domain. Examples: www, api, mail, vpn"/>
+                                         ToolTip="Required for standard certificates: Server hostname without domain. Examples: www, api, mail, vpn">
+                                    <TextBox.Style>
+                                        <Style TargetType="TextBox">
+                                            <Setter Property="BorderBrush" Value="#CED4DA"/>
+                                            <Setter Property="BorderThickness" Value="1"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CertificateRequest.HostNameError, Converter={StaticResource EmptyStringToBoolConverter}}" Value="False">
+                                                    <Setter Property="BorderBrush" Value="#DC3545"/>
+                                                    <Setter Property="BorderThickness" Value="2"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Style>
+                                </TextBox>
+                                <TextBlock Text="{Binding CertificateRequest.HostNameError}" 
+                                           FontSize="11"
+                                           Foreground="#DC3545"
+                                           FontWeight="SemiBold"
+                                           Margin="0,3,0,0"
+                                           Visibility="{Binding CertificateRequest.HostNameError, Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
                                 <TextBlock Text="Not needed for wildcard certificates" 
                                            Visibility="{Binding CertificateRequest.IsWildcard, Converter={StaticResource BoolToVisibilityConverter}}"
                                            Style="{StaticResource StatusTextStyle}"
@@ -358,14 +410,52 @@
                                 <StackPanel Grid.Column="0" Style="{StaticResource FormGroupStyle}">
                                     <TextBlock Text="Location (City) *" Style="{StaticResource FieldLabelStyle}"/>
                                     <TextBox Text="{Binding CertificateRequest.Location}"
-                                             ToolTip="Required: City name for certificate subject. Examples: Seattle, New York, London"/>
+                                             ToolTip="Required: City name for certificate subject. Examples: Seattle, New York, London">
+                                        <TextBox.Style>
+                                            <Style TargetType="TextBox">
+                                                <Setter Property="BorderBrush" Value="#CED4DA"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding CertificateRequest.LocationError, Converter={StaticResource EmptyStringToBoolConverter}}" Value="False">
+                                                        <Setter Property="BorderBrush" Value="#DC3545"/>
+                                                        <Setter Property="BorderThickness" Value="2"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBox.Style>
+                                    </TextBox>
+                                    <TextBlock Text="{Binding CertificateRequest.LocationError}" 
+                                               FontSize="11"
+                                               Foreground="#DC3545"
+                                               FontWeight="SemiBold"
+                                               Margin="0,3,0,0"
+                                               Visibility="{Binding CertificateRequest.LocationError, Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
                                 </StackPanel>
                                 
                                 <StackPanel Grid.Column="2" Style="{StaticResource FormGroupStyle}">
                                     <TextBlock Text="State *" Style="{StaticResource FieldLabelStyle}"/>
                                     <TextBox Text="{Binding CertificateRequest.State}" 
                                              MaxLength="2"
-                                             ToolTip="Required: Two-letter state/province code. Examples: WA, CA, NY, TX"/>
+                                             ToolTip="Required: Two-letter state/province code. Examples: WA, CA, NY, TX">
+                                        <TextBox.Style>
+                                            <Style TargetType="TextBox">
+                                                <Setter Property="BorderBrush" Value="#CED4DA"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding CertificateRequest.StateError, Converter={StaticResource EmptyStringToBoolConverter}}" Value="False">
+                                                        <Setter Property="BorderBrush" Value="#DC3545"/>
+                                                        <Setter Property="BorderThickness" Value="2"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBox.Style>
+                                    </TextBox>
+                                    <TextBlock Text="{Binding CertificateRequest.StateError}" 
+                                               FontSize="11"
+                                               Foreground="#DC3545"
+                                               FontWeight="SemiBold"
+                                               Margin="0,3,0,0"
+                                               Visibility="{Binding CertificateRequest.StateError, Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
                                 </StackPanel>
                             </Grid>
 
@@ -605,7 +695,20 @@
                                                  Padding="8"
                                                  FontSize="12"
                                                  Visibility="{Binding CertificateRequest.ShowConfirmPassword, Converter={StaticResource InverseBoolToVisibilityConverter}}"
-                                                 xmlns:util="clr-namespace:ZLGetCert.Utilities"/>
+                                                 xmlns:util="clr-namespace:ZLGetCert.Utilities">
+                                        <PasswordBox.Style>
+                                            <Style TargetType="PasswordBox">
+                                                <Setter Property="BorderBrush" Value="#CED4DA"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding CertificateRequest.ConfirmPasswordError, Converter={StaticResource EmptyStringToBoolConverter}}" Value="False">
+                                                        <Setter Property="BorderBrush" Value="#DC3545"/>
+                                                        <Setter Property="BorderThickness" Value="2"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </PasswordBox.Style>
+                                    </PasswordBox>
                                     
                                     <!-- TextBox (shown when revealing password) -->
                                     <TextBox Grid.Column="0"
@@ -614,7 +717,20 @@
                                              Margin="0,0,10,0"
                                              Padding="8"
                                              FontSize="12"
-                                             Visibility="{Binding CertificateRequest.ShowConfirmPassword, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                             Visibility="{Binding CertificateRequest.ShowConfirmPassword, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <TextBox.Style>
+                                            <Style TargetType="TextBox">
+                                                <Setter Property="BorderBrush" Value="#CED4DA"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding CertificateRequest.ConfirmPasswordError, Converter={StaticResource EmptyStringToBoolConverter}}" Value="False">
+                                                        <Setter Property="BorderBrush" Value="#DC3545"/>
+                                                        <Setter Property="BorderThickness" Value="2"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBox.Style>
+                                    </TextBox>
                                     
                                     <Button Grid.Column="1" 
                                             Content="👁" 
@@ -624,6 +740,12 @@
                                             Height="32"
                                             ToolTip="Toggle password visibility"/>
                                 </Grid>
+                                <TextBlock Text="{Binding CertificateRequest.ConfirmPasswordError}" 
+                                           FontSize="11"
+                                           Foreground="#DC3545"
+                                           FontWeight="SemiBold"
+                                           Margin="0,3,0,0"
+                                           Visibility="{Binding CertificateRequest.ConfirmPasswordError, Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
                             </StackPanel>
 
                             <!-- PEM/KEY Export Options -->
@@ -712,6 +834,55 @@
                                            Style="{StaticResource StatusTextStyle}"
                                            Margin="0,5,0,0"/>
                             </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- Validation Summary Panel -->
+                    <Border Margin="0,10,0,10">
+                        <Border.Style>
+                            <Style TargetType="Border" BasedOn="{StaticResource CardStyle}">
+                                <Setter Property="Background" Value="#D4EDDA"/>
+                                <Setter Property="BorderBrush" Value="#28A745"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CertificateRequest.HasValidationErrors}" Value="True">
+                                        <Setter Property="Background" Value="#F8D7DA"/>
+                                        <Setter Property="BorderBrush" Value="#DC3545"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel>
+                            <!-- Header -->
+                            <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="✓ Ready to Generate"/>
+                                        <Setter Property="Foreground" Value="#28A745"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding CertificateRequest.HasValidationErrors}" Value="True">
+                                                <Setter Property="Text" Value="⚠ Cannot Generate Certificate"/>
+                                                <Setter Property="Foreground" Value="#DC3545"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            
+                            <!-- Validation Summary Message -->
+                            <TextBlock Text="{Binding CertificateRequest.ValidationSummary}" 
+                                       FontSize="12" 
+                                       TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="#155724"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding CertificateRequest.HasValidationErrors}" Value="True">
+                                                <Setter Property="Foreground" Value="#721C24"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </StackPanel>
                     </Border>
                     

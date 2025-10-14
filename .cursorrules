@@ -1,0 +1,85 @@
+# ZLGetCert Project - Cursor Rules
+
+## Build & Compilation
+
+**IMPORTANT: Do not attempt command-line builds**
+- This is a .NET Framework 4.8 WPF project (not .NET Core/5+)
+- Command-line builds (dotnet build, msbuild) do not work reliably
+- User will handle all builds manually in Visual Studio
+- Focus on code changes only, not build verification
+
+## Project Structure
+
+- **Framework:** .NET Framework 4.8 (old-style csproj)
+- **UI:** WPF (Windows Presentation Foundation)
+- **Architecture:** MVVM pattern
+- **Package Manager:** NuGet packages via PackageReference
+
+## Key Technologies
+
+- WPF for UI with XAML
+- SecureString for password handling
+- CertReq.exe for certificate operations
+- NLog for logging
+- Newtonsoft.Json for configuration
+
+## Code Standards
+
+### Security First
+- Always use SecureString for passwords
+- Validate all user inputs for command injection
+- Use ProcessArgumentValidator for external process arguments
+- Document security implications in comments
+
+### XAML Patterns
+- Use converters for data binding transformations
+- Declare converters in Window.Resources
+- Use StaticResource for style references
+- Follow existing naming conventions (e.g., `{StaticResource FieldLabelStyle}`)
+
+### ViewModel Patterns
+- Implement INotifyPropertyChanged via BaseViewModel
+- Call OnPropertyChanged for dependent properties
+- Dispose SecureStrings properly
+- Use RelayCommand for ICommand implementations
+
+## File Modifications
+
+### Adding New Files
+When adding new C# files, you MUST add them to `ZLGetCert.csproj`:
+```xml
+<Compile Include="Path\To\NewFile.cs" />
+```
+
+### Adding Converters
+1. Create converter class in `Converters/` folder
+2. Add to csproj `<Compile Include="Converters\ConverterName.cs" />`
+3. Register in XAML resources: `<local:ConverterName x:Key="ConverterName"/>`
+
+## UX Improvements
+
+### Current Work (Oct 2025)
+- Implementing inline validation feedback
+- Adding required field indicators (*)
+- Creating validation summary panels
+- Real-time field validation
+
+### Completed Improvements
+- Password strength validation
+- Template-driven architecture (eliminated type/template confusion)
+- Security warnings for unencrypted keys
+- Progressive disclosure UI patterns
+
+## Testing Strategy
+
+- User will test in Visual Studio
+- Focus on functional correctness in code
+- Check linter errors with read_lints tool
+- Visual/UI testing done by user manually
+
+## Documentation
+
+- Update summary documents when completing major work
+- Reference specific line numbers when discussing code locations
+- Use the format: `filename:lineNumber` for citations
+

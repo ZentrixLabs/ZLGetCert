@@ -163,6 +163,7 @@
     <Compile Include="Converters\PasswordStrengthConverter.cs" />
     <Compile Include="Converters\PercentageWidthConverter.cs" />
     <Compile Include="Converters\SecureStringToStringConverter.cs" />
+    <Compile Include="Converters\EmptyStringToVisibilityConverter.cs" />
     <Compile Include="Views\ConfigurationEditorView.xaml.cs">
       <DependentUpon>ConfigurationEditorView.xaml</DependentUpon>
     </Compile>

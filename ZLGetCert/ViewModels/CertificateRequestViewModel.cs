@@ -85,6 +85,9 @@ namespace ZLGetCert.ViewModels
                 SetProperty(ref _hostName, value);
                 UpdateFQDN();
                 OnPropertyChanged(nameof(CanGenerate));
+                OnPropertyChanged(nameof(HostNameError));
+                OnPropertyChanged(nameof(ValidationSummary));
+                OnPropertyChanged(nameof(HasValidationErrors));
             }
         }
 
@@ -111,6 +114,9 @@ namespace ZLGetCert.ViewModels
             {
                 SetProperty(ref _location, value);
                 OnPropertyChanged(nameof(CanGenerate));
+                OnPropertyChanged(nameof(LocationError));
+                OnPropertyChanged(nameof(ValidationSummary));
+                OnPropertyChanged(nameof(HasValidationErrors));
             }
         }
 
@@ -124,6 +130,9 @@ namespace ZLGetCert.ViewModels
             {
                 SetProperty(ref _state, value);
                 OnPropertyChanged(nameof(CanGenerate));
+                OnPropertyChanged(nameof(StateError));
+                OnPropertyChanged(nameof(ValidationSummary));
+                OnPropertyChanged(nameof(HasValidationErrors));
             }
         }
 
@@ -165,6 +174,9 @@ namespace ZLGetCert.ViewModels
                 if (SetProperty(ref _caServer, value))
                 {
                     OnPropertyChanged(nameof(CanGenerate));
+                    OnPropertyChanged(nameof(CAServerError));
+                    OnPropertyChanged(nameof(ValidationSummary));
+                    OnPropertyChanged(nameof(HasValidationErrors));
                     // Refresh templates when CA server changes
                     RefreshTemplates();
                 }
@@ -184,6 +196,10 @@ namespace ZLGetCert.ViewModels
                     // CRITICAL FIX: Auto-configure certificate type based on selected template
                     AutoConfigureFromTemplate(value);
                     OnPropertyChanged(nameof(CanGenerate));
+                    OnPropertyChanged(nameof(TemplateError));
+                    OnPropertyChanged(nameof(HostNameError)); // Template affects hostname requirement
+                    OnPropertyChanged(nameof(ValidationSummary));
+                    OnPropertyChanged(nameof(HasValidationErrors));
                 }
             }
         }
@@ -203,6 +219,9 @@ namespace ZLGetCert.ViewModels
                     UpdateFQDN();
                     OnPropertyChanged(nameof(CanGenerate));
                     OnPropertyChanged(nameof(CertificateName));
+                    OnPropertyChanged(nameof(HostNameError)); // Wildcard affects hostname requirement
+                    OnPropertyChanged(nameof(ValidationSummary));
+                    OnPropertyChanged(nameof(HasValidationErrors));
                 }
             }
         }
@@ -302,6 +321,9 @@ namespace ZLGetCert.ViewModels
                     OnPropertyChanged(nameof(PasswordStrengthValue));
                     OnPropertyChanged(nameof(PasswordValidation));
                     OnPropertyChanged(nameof(CanGenerate));
+                    OnPropertyChanged(nameof(ConfirmPasswordError));
+                    OnPropertyChanged(nameof(ValidationSummary));
+                    OnPropertyChanged(nameof(HasValidationErrors));
                     ((RelayCommand)CopyPasswordCommand).RaiseCanExecuteChanged();
                 }
             }
@@ -321,6 +343,9 @@ namespace ZLGetCert.ViewModels
                 if (SetProperty(ref _confirmPassword, value))
                 {
                     OnPropertyChanged(nameof(CanGenerate));
+                    OnPropertyChanged(nameof(ConfirmPasswordError));
+                    OnPropertyChanged(nameof(ValidationSummary));
+                    OnPropertyChanged(nameof(HasValidationErrors));
                 }
             }
         }
@@ -474,6 +499,166 @@ namespace ZLGetCert.ViewModels
                 return "✓ All requirements met";
             }
         }
+
+        /// <summary>
+        /// CA Server validation error message
+        /// </summary>
+        public string CAServerError
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(CAServer))
+                    return "CA Server is required";
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Template validation error message
+        /// </summary>
+        public string TemplateError
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(Template))
+                    return "Certificate Template is required";
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Hostname validation error message
+        /// </summary>
+        public string HostNameError
+        {
+            get
+            {
+                var currentType = Type;
+                if (currentType != CertificateType.Standard && currentType != CertificateType.Wildcard)
+                    return string.Empty; // Not required for non-web server certs
+
+                if (IsWildcard)
+                    return string.Empty; // Not required for wildcard
+
+                if (string.IsNullOrWhiteSpace(HostName))
+                    return "Hostname is required for standard certificates";
+                
+                if (!ValidationHelper.IsValidDnsName(HostName))
+                    return "Invalid hostname format (use only letters, numbers, hyphens)";
+                
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Location validation error message
+        /// </summary>
+        public string LocationError
+        {
+            get
+            {
+                if (IsCSRWorkflow)
+                    return string.Empty; // Not validated for CSR workflow
+
+                if (string.IsNullOrWhiteSpace(Location))
+                    return "Location (City) is required";
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// State validation error message
+        /// </summary>
+        public string StateError
+        {
+            get
+            {
+                if (IsCSRWorkflow)
+                    return string.Empty; // Not validated for CSR workflow
+
+                if (string.IsNullOrWhiteSpace(State))
+                    return "State is required";
+                
+                if (State != null && State.Length != 2)
+                    return "State must be exactly 2 letters (e.g., WA, CA, NY)";
+                
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Password confirmation error message
+        /// </summary>
+        public string ConfirmPasswordError
+        {
+            get
+            {
+                if (PfxPassword == null || PfxPassword.Length == 0)
+                    return string.Empty; // Don't show error if no password yet
+
+                if (ConfirmPassword == null || ConfirmPassword.Length == 0)
+                    return "Please confirm your password";
+                
+                if (!SecureStringHelper.SecureStringEquals(PfxPassword, ConfirmPassword))
+                    return "Passwords do not match";
+                
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Get list of missing required fields for validation summary
+        /// </summary>
+        public List<string> MissingRequiredFields
+        {
+            get
+            {
+                var missing = new List<string>();
+
+                if (!string.IsNullOrEmpty(CAServerError))
+                    missing.Add("CA Server");
+
+                if (!string.IsNullOrEmpty(TemplateError))
+                    missing.Add("Certificate Template");
+
+                if (!string.IsNullOrEmpty(HostNameError))
+                    missing.Add("Hostname");
+
+                if (!string.IsNullOrEmpty(LocationError))
+                    missing.Add("Location (City)");
+
+                if (!string.IsNullOrEmpty(StateError))
+                    missing.Add("State");
+
+                if (PfxPassword == null || PfxPassword.Length == 0)
+                    missing.Add("PFX Password");
+
+                if (!string.IsNullOrEmpty(ConfirmPasswordError))
+                    missing.Add("Password Confirmation");
+
+                return missing;
+            }
+        }
+
+        /// <summary>
+        /// Validation summary message
+        /// </summary>
+        public string ValidationSummary
+        {
+            get
+            {
+                var missing = MissingRequiredFields;
+                if (missing.Count == 0)
+                    return "✓ All required fields completed";
+                
+                return $"⚠ Missing {missing.Count} required field{(missing.Count == 1 ? "" : "s")}: {string.Join(", ", missing)}";
+            }
+        }
+
+        /// <summary>
+        /// Whether validation summary should show error state
+        /// </summary>
+        public bool HasValidationErrors => MissingRequiredFields.Count > 0;
 
         /// <summary>
         /// Whether the form can generate a certificate
