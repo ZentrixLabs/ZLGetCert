@@ -147,19 +147,21 @@ namespace ZLGetCert.ViewModels
                 },
                 FilePaths = new FilePathsConfig
                 {
-                    CertificateFolder = "C:\\ssl",
-                    LogPath = "C:\\ProgramData\\ZentrixLabs\\ZLGetCert"
+                    CertificateFolder = "%USERPROFILE%\\Documents\\Certificates",
+                    LogPath = "%APPDATA%\\ZLGetCert\\Logs",
+                    TempPath = "%TEMP%\\ZLGetCert"
                 },
                 DefaultSettings = new DefaultSettingsConfig
                 {
                     KeyLength = 2048,
                     HashAlgorithm = "sha256",
-                    DefaultPassword = "password",
+                    DefaultPassword = "", // No default password for security
                     RequirePasswordConfirmation = true,
                     AutoCleanup = true,
                     RememberPassword = false,
                     AvailableHashAlgorithms = new List<string> { "sha256", "sha384", "sha512" }
                 },
+                CertificateParameters = new CertificateParametersConfig(),
                 Logging = new LoggingConfig
                 {
                     LogLevel = Enums.LogLevel.Information,

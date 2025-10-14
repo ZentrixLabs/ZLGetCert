@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using ZLGetCert.Enums;
@@ -13,6 +14,7 @@ namespace ZLGetCert.Models
         private FilePathsConfig _filePaths;
         private OpenSSLConfig _openSSL;
         private DefaultSettingsConfig _defaultSettings;
+        private CertificateParametersConfig _certificateParameters;
         private LoggingConfig _logging;
 
         public AppConfiguration()
@@ -21,6 +23,7 @@ namespace ZLGetCert.Models
             _filePaths = new FilePathsConfig();
             _openSSL = new OpenSSLConfig();
             _defaultSettings = new DefaultSettingsConfig();
+            _certificateParameters = new CertificateParametersConfig();
             _logging = new LoggingConfig();
         }
 
@@ -73,6 +76,19 @@ namespace ZLGetCert.Models
             {
                 _defaultSettings = value;
                 OnPropertyChanged(nameof(DefaultSettings));
+            }
+        }
+
+        /// <summary>
+        /// Certificate parameters configuration
+        /// </summary>
+        public CertificateParametersConfig CertificateParameters
+        {
+            get => _certificateParameters;
+            set
+            {
+                _certificateParameters = value;
+                OnPropertyChanged(nameof(CertificateParameters));
             }
         }
 
@@ -221,6 +237,7 @@ namespace ZLGetCert.Models
     {
         private string _certificateFolder;
         private string _logPath;
+        private string _tempPath;
 
         /// <summary>
         /// Certificate output folder
@@ -245,6 +262,19 @@ namespace ZLGetCert.Models
             {
                 _logPath = value;
                 OnPropertyChanged(nameof(LogPath));
+            }
+        }
+
+        /// <summary>
+        /// Temporary files path
+        /// </summary>
+        public string TempPath
+        {
+            get => _tempPath;
+            set
+            {
+                _tempPath = value;
+                OnPropertyChanged(nameof(TempPath));
             }
         }
 
@@ -296,14 +326,24 @@ namespace ZLGetCert.Models
         }
 
         /// <summary>
-        /// Default password (not secure, use for development only)
+        /// Default password - DEPRECATED for security reasons
+        /// Passwords must be entered at runtime and are no longer stored in configuration
         /// </summary>
+        [Obsolete("DefaultPassword is deprecated for security reasons. Passwords must be entered at runtime.")]
         public string DefaultPassword
         {
-            get => _defaultPassword;
+            get => string.Empty; // Always return empty for security
             set
             {
-                _defaultPassword = value;
+                // Log warning if someone tries to set a password
+                if (!string.IsNullOrEmpty(value))
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        "WARNING: DefaultPassword in configuration is deprecated and ignored for security reasons. " +
+                        "Passwords must be entered at runtime.");
+                }
+                // Don't store the value - always keep it empty
+                _defaultPassword = string.Empty;
                 OnPropertyChanged(nameof(DefaultPassword));
             }
         }
@@ -455,6 +495,190 @@ namespace ZLGetCert.Models
             {
                 _availableLogLevels = value;
                 OnPropertyChanged(nameof(AvailableLogLevels));
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    /// <summary>
+    /// Certificate parameters configuration
+    /// </summary>
+    public class CertificateParametersConfig : INotifyPropertyChanged
+    {
+        private int _keySpec;
+        private string _providerName;
+        private int _providerType;
+        private string _keyUsage;
+        private List<string> _enhancedKeyUsageOIDs;
+        private bool _exportable;
+        private bool _machineKeySet;
+        private bool _smime;
+        private bool _privateKeyArchive;
+        private bool _userProtected;
+        private bool _useExistingKeySet;
+
+        public CertificateParametersConfig()
+        {
+            // Default values for web server certificates
+            _keySpec = 1; // RSA
+            _providerName = "Microsoft RSA SChannel Cryptographic Provider";
+            _providerType = 12; // RSA
+            _keyUsage = "0xa0"; // Digital Signature + Key Encipherment
+            _enhancedKeyUsageOIDs = new List<string> { "1.3.6.1.5.5.7.3.1" }; // Server Authentication
+            _exportable = true;
+            _machineKeySet = true;
+            _smime = false;
+            _privateKeyArchive = false;
+            _userProtected = false;
+            _useExistingKeySet = false;
+        }
+
+        /// <summary>
+        /// Key specification (1=RSA, 2=DH, 3=DSS)
+        /// </summary>
+        public int KeySpec
+        {
+            get => _keySpec;
+            set
+            {
+                _keySpec = value;
+                OnPropertyChanged(nameof(KeySpec));
+            }
+        }
+
+        /// <summary>
+        /// Cryptographic provider name
+        /// </summary>
+        public string ProviderName
+        {
+            get => _providerName;
+            set
+            {
+                _providerName = value;
+                OnPropertyChanged(nameof(ProviderName));
+            }
+        }
+
+        /// <summary>
+        /// Cryptographic provider type
+        /// </summary>
+        public int ProviderType
+        {
+            get => _providerType;
+            set
+            {
+                _providerType = value;
+                OnPropertyChanged(nameof(ProviderType));
+            }
+        }
+
+        /// <summary>
+        /// Key usage flags (hex string)
+        /// </summary>
+        public string KeyUsage
+        {
+            get => _keyUsage;
+            set
+            {
+                _keyUsage = value;
+                OnPropertyChanged(nameof(KeyUsage));
+            }
+        }
+
+        /// <summary>
+        /// Enhanced key usage OIDs
+        /// </summary>
+        public List<string> EnhancedKeyUsageOIDs
+        {
+            get => _enhancedKeyUsageOIDs;
+            set
+            {
+                _enhancedKeyUsageOIDs = value;
+                OnPropertyChanged(nameof(EnhancedKeyUsageOIDs));
+            }
+        }
+
+        /// <summary>
+        /// Whether private key is exportable
+        /// </summary>
+        public bool Exportable
+        {
+            get => _exportable;
+            set
+            {
+                _exportable = value;
+                OnPropertyChanged(nameof(Exportable));
+            }
+        }
+
+        /// <summary>
+        /// Whether to use machine key set
+        /// </summary>
+        public bool MachineKeySet
+        {
+            get => _machineKeySet;
+            set
+            {
+                _machineKeySet = value;
+                OnPropertyChanged(nameof(MachineKeySet));
+            }
+        }
+
+        /// <summary>
+        /// Whether this is an S/MIME certificate
+        /// </summary>
+        public bool SMIME
+        {
+            get => _smime;
+            set
+            {
+                _smime = value;
+                OnPropertyChanged(nameof(SMIME));
+            }
+        }
+
+        /// <summary>
+        /// Whether to archive private key
+        /// </summary>
+        public bool PrivateKeyArchive
+        {
+            get => _privateKeyArchive;
+            set
+            {
+                _privateKeyArchive = value;
+                OnPropertyChanged(nameof(PrivateKeyArchive));
+            }
+        }
+
+        /// <summary>
+        /// Whether private key is user protected
+        /// </summary>
+        public bool UserProtected
+        {
+            get => _userProtected;
+            set
+            {
+                _userProtected = value;
+                OnPropertyChanged(nameof(UserProtected));
+            }
+        }
+
+        /// <summary>
+        /// Whether to use existing key set
+        /// </summary>
+        public bool UseExistingKeySet
+        {
+            get => _useExistingKeySet;
+            set
+            {
+                _useExistingKeySet = value;
+                OnPropertyChanged(nameof(UseExistingKeySet));
             }
         }
 

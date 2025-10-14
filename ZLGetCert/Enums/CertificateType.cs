@@ -6,7 +6,7 @@ namespace ZLGetCert.Enums
     public enum CertificateType
     {
         /// <summary>
-        /// Standard hostname certificate with SANs
+        /// Standard hostname certificate with SANs (Web Server)
         /// </summary>
         Standard,
 
@@ -14,6 +14,26 @@ namespace ZLGetCert.Enums
         /// Wildcard domain certificate (*.domain.com)
         /// </summary>
         Wildcard,
+
+        /// <summary>
+        /// Client authentication certificate
+        /// </summary>
+        ClientAuth,
+
+        /// <summary>
+        /// Code signing certificate
+        /// </summary>
+        CodeSigning,
+
+        /// <summary>
+        /// Email protection certificate (S/MIME)
+        /// </summary>
+        Email,
+
+        /// <summary>
+        /// Custom certificate with user-defined OIDs
+        /// </summary>
+        Custom,
 
         /// <summary>
         /// Certificate generated from existing CSR file

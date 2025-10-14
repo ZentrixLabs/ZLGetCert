@@ -62,6 +62,14 @@ namespace ZLGetCert.Utilities
         }
 
         /// <summary>
+        /// Extension method to copy a SecureString
+        /// </summary>
+        public static SecureString Copy(this SecureString source)
+        {
+            return CopySecureString(source);
+        }
+
+        /// <summary>
         /// Clear a SecureString from memory
         /// </summary>
         public static void ClearSecureString(SecureString secureString)

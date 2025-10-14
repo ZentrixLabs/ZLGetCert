@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using ZLGetCert.Models;
 using ZLGetCert.Enums;
+using ZLGetCert.Utilities;
 
 namespace ZLGetCert.Services
 {
@@ -32,6 +33,38 @@ namespace ZLGetCert.Services
         }
 
         /// <summary>
+        /// Safely escape and quote a command line argument for .NET Framework 4.8
+        /// This provides similar protection to ArgumentList in newer .NET versions
+        /// </summary>
+        private string EscapeArgument(string argument)
+        {
+            if (string.IsNullOrEmpty(argument))
+                return "\"\"";
+
+            // If the argument contains spaces, quotes, or special characters, wrap it in quotes
+            // and escape any internal quotes
+            if (argument.Contains(" ") || argument.Contains("\"") || argument.Contains("\t"))
+            {
+                // Escape backslashes that precede quotes
+                argument = argument.Replace("\\\"", "\\\\\"");
+                // Escape quotes
+                argument = argument.Replace("\"", "\\\"");
+                // Wrap in quotes
+                return $"\"{argument}\"";
+            }
+
+            return argument;
+        }
+
+        /// <summary>
+        /// Build a safe command line from multiple arguments
+        /// </summary>
+        private string BuildArgumentString(params string[] arguments)
+        {
+            return string.Join(" ", arguments.Select(EscapeArgument));
+        }
+
+        /// <summary>
         /// Get available Certificate Authorities from Active Directory
         /// </summary>
         public List<string> GetAvailableCAs()
@@ -48,7 +81,7 @@ namespace ZLGetCert.Services
                     StartInfo = new ProcessStartInfo
                     {
                         FileName = "certutil.exe",
-                        Arguments = "-dump",
+                        Arguments = "-dump", // Simple argument, no escaping needed
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
@@ -59,7 +92,20 @@ namespace ZLGetCert.Services
                 process.Start();
                 string output = process.StandardOutput.ReadToEnd();
                 string error = process.StandardError.ReadToEnd();
-                process.WaitForExit(30000); // 30 second timeout
+                
+                // Wait for exit with timeout and kill if necessary
+                if (!process.WaitForExit(30000))
+                {
+                    _logger.LogWarning("CA dump timed out after 30 seconds");
+                    try
+                    {
+                        process.Kill();
+                    }
+                    catch
+                    {
+                        // Process may have already exited
+                    }
+                }
 
                 if (process.ExitCode == 0)
                 {
@@ -97,7 +143,7 @@ namespace ZLGetCert.Services
                     StartInfo = new ProcessStartInfo
                     {
                         FileName = "certutil.exe",
-                        Arguments = "-ADCA",
+                        Arguments = "-ADCA", // Simple argument, no escaping needed
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
@@ -108,7 +154,20 @@ namespace ZLGetCert.Services
                 process.Start();
                 string output = process.StandardOutput.ReadToEnd();
                 string error = process.StandardError.ReadToEnd();
-                process.WaitForExit(30000);
+                
+                // Wait for exit with timeout and kill if necessary
+                if (!process.WaitForExit(30000))
+                {
+                    _logger.LogWarning("ADCA query timed out after 30 seconds");
+                    try
+                    {
+                        process.Kill();
+                    }
+                    catch
+                    {
+                        // Process may have already exited
+                    }
+                }
 
                 if (process.ExitCode == 0)
                 {
@@ -195,7 +254,6 @@ namespace ZLGetCert.Services
                                 !serverName.StartsWith("-") &&
                                 !serverName.StartsWith("Allow") && // Skip permission lines
                                 !serverName.StartsWith("NT AUTHORITY") && // Skip permission lines
-                                !serverName.StartsWith("MPMATERIALS") && // Skip permission lines
                                 !caList.Contains(serverName))
                             {
                                 caList.Add(serverName);
@@ -205,7 +263,6 @@ namespace ZLGetCert.Services
                     // Also look for standalone server names (without backslash)
                     else if (!trimmedLine.StartsWith("Allow") && 
                              !trimmedLine.StartsWith("NT AUTHORITY") && 
-                             !trimmedLine.StartsWith("MPMATERIALS") &&
                              !trimmedLine.StartsWith("=") && 
                              !trimmedLine.StartsWith("-") &&
                              !trimmedLine.StartsWith("*") &&
@@ -242,6 +299,9 @@ namespace ZLGetCert.Services
                     return templates;
                 }
 
+                // SECURITY: Validate CA server name to prevent command injection
+                server = ProcessArgumentValidator.ValidateCAServerName(server, "CA Server");
+                
                 var caConfig = $"{server}\\{server.Split('.')[0].ToUpper()}";
                 
                 _logger.LogInfo("Querying available templates from CA: {0}", caConfig);
@@ -251,7 +311,8 @@ namespace ZLGetCert.Services
                     StartInfo = new ProcessStartInfo
                     {
                         FileName = "certutil.exe",
-                        Arguments = $"-CATemplates -config \"{caConfig}\"",
+                        // SECURITY: Use BuildArgumentString to safely escape arguments
+                        Arguments = BuildArgumentString("-CATemplates", "-config", caConfig),
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
@@ -262,7 +323,21 @@ namespace ZLGetCert.Services
                 process.Start();
                 string output = process.StandardOutput.ReadToEnd();
                 string error = process.StandardError.ReadToEnd();
-                process.WaitForExit(30000); // 30 second timeout
+                
+                // Use WaitForExit with timeout and kill if necessary
+                if (!process.WaitForExit(30000))
+                {
+                    _logger.LogWarning("Template query timed out after 30 seconds, killing process");
+                    try
+                    {
+                        process.Kill();
+                    }
+                    catch
+                    {
+                        // Process may have already exited
+                    }
+                    return templates;
+                }
 
                 if (process.ExitCode != 0)
                 {
@@ -274,6 +349,11 @@ namespace ZLGetCert.Services
                 templates = ParseTemplateOutput(output);
                 
                 _logger.LogInfo("Found {0} available templates", templates.Count);
+            }
+            catch (ArgumentException argEx)
+            {
+                // Input validation error - log and return empty list
+                _logger.LogError(argEx, "Invalid input for template query");
             }
             catch (Exception ex)
             {
@@ -387,6 +467,34 @@ namespace ZLGetCert.Services
                 _logger.LogInfo("Starting certificate generation for {0} ({1})", request.CertificateName, request.Type);
 
                 var config = _configService.GetConfiguration();
+                
+                // CRITICAL: Validate template/type match before generating certificate
+                var validation = new Utilities.ValidationResult();
+                ValidationHelper.ValidateTemplateTypeMatch(
+                    request.Template,
+                    request.Type,
+                    config.CertificateParameters.EnhancedKeyUsageOIDs,
+                    validation);
+
+                if (!validation.IsValid)
+                {
+                    _logger.LogError("Template/Type validation failed: {0}", 
+                        string.Join(", ", validation.Errors));
+                    return new CertificateInfo
+                    {
+                        IsValid = false,
+                        ErrorMessage = "Certificate validation failed:\n" + string.Join("\n", validation.Errors)
+                    };
+                }
+
+                if (validation.Warnings.Any())
+                {
+                    foreach (var warning in validation.Warnings)
+                    {
+                        _logger.LogWarning(warning);
+                    }
+                }
+
                 var certificateInfo = new CertificateInfo();
 
                 // Ensure certificate folder exists
@@ -512,23 +620,26 @@ namespace ZLGetCert.Services
             sb.AppendLine();
             sb.AppendLine("[NewRequest]");
             sb.AppendLine($"Subject = \"{request.Subject}\"");
-            sb.AppendLine("KeySpec = 1");
+            sb.AppendLine($"KeySpec = {config.CertificateParameters.KeySpec}");
             sb.AppendLine($"KeyLength = {config.DefaultSettings.KeyLength}");
             sb.AppendLine($"Hashalgorithm = {config.DefaultSettings.HashAlgorithm}");
-            sb.AppendLine("Exportable = TRUE");
+            sb.AppendLine($"Exportable = {(config.CertificateParameters.Exportable ? "TRUE" : "FALSE")}");
             sb.AppendLine($"FriendlyName = {request.HostName}");
-            sb.AppendLine("MachineKeySet = TRUE");
-            sb.AppendLine("SMIME = False");
-            sb.AppendLine("PrivateKeyArchive = FALSE");
-            sb.AppendLine("UserProtected = FALSE");
-            sb.AppendLine("UseExistingKeySet = FALSE");
-            sb.AppendLine("ProviderName = Microsoft RSA SChannel Cryptographic Provider");
-            sb.AppendLine("ProviderType = 12");
+            sb.AppendLine($"MachineKeySet = {(config.CertificateParameters.MachineKeySet ? "TRUE" : "FALSE")}");
+            sb.AppendLine($"SMIME = {(config.CertificateParameters.SMIME ? "TRUE" : "FALSE")}");
+            sb.AppendLine($"PrivateKeyArchive = {(config.CertificateParameters.PrivateKeyArchive ? "TRUE" : "FALSE")}");
+            sb.AppendLine($"UserProtected = {(config.CertificateParameters.UserProtected ? "TRUE" : "FALSE")}");
+            sb.AppendLine($"UseExistingKeySet = {(config.CertificateParameters.UseExistingKeySet ? "TRUE" : "FALSE")}");
+            sb.AppendLine($"ProviderName = {config.CertificateParameters.ProviderName}");
+            sb.AppendLine($"ProviderType = {config.CertificateParameters.ProviderType}");
             sb.AppendLine("RequestType = PKCS10");
-            sb.AppendLine("KeyUsage = 0xa0");
+            sb.AppendLine($"KeyUsage = {config.CertificateParameters.KeyUsage}");
             sb.AppendLine();
             sb.AppendLine("[EnhancedKeyUsageExtension]");
-            sb.AppendLine("OID=1.3.6.1.5.5.7.3.1");
+            foreach (var oid in config.CertificateParameters.EnhancedKeyUsageOIDs)
+            {
+                sb.AppendLine($"OID={oid}");
+            }
             sb.AppendLine();
             sb.AppendLine("[Extensions]");
             sb.AppendLine("2.5.29.17 = \"{text}\"");
@@ -563,23 +674,26 @@ namespace ZLGetCert.Services
             sb.AppendLine();
             sb.AppendLine("[NewRequest]");
             sb.AppendLine($"Subject = \"{request.Subject}\"");
-            sb.AppendLine("KeySpec = 1");
+            sb.AppendLine($"KeySpec = {config.CertificateParameters.KeySpec}");
             sb.AppendLine($"KeyLength = {config.DefaultSettings.KeyLength}");
             sb.AppendLine($"HashAlgorithm = {config.DefaultSettings.HashAlgorithm}");
-            sb.AppendLine("Exportable = TRUE");
+            sb.AppendLine($"Exportable = {(config.CertificateParameters.Exportable ? "TRUE" : "FALSE")}");
             sb.AppendLine($"FriendlyName = {request.HostName}");
-            sb.AppendLine("MachineKeySet = TRUE");
-            sb.AppendLine("SMIME = False");
-            sb.AppendLine("PrivateKeyArchive = FALSE");
-            sb.AppendLine("UserProtected = FALSE");
-            sb.AppendLine("UseExistingKeySet = FALSE");
-            sb.AppendLine("ProviderName = Microsoft RSA SChannel Cryptographic Provider");
-            sb.AppendLine("ProviderType = 12");
+            sb.AppendLine($"MachineKeySet = {(config.CertificateParameters.MachineKeySet ? "TRUE" : "FALSE")}");
+            sb.AppendLine($"SMIME = {(config.CertificateParameters.SMIME ? "TRUE" : "FALSE")}");
+            sb.AppendLine($"PrivateKeyArchive = {(config.CertificateParameters.PrivateKeyArchive ? "TRUE" : "FALSE")}");
+            sb.AppendLine($"UserProtected = {(config.CertificateParameters.UserProtected ? "TRUE" : "FALSE")}");
+            sb.AppendLine($"UseExistingKeySet = {(config.CertificateParameters.UseExistingKeySet ? "TRUE" : "FALSE")}");
+            sb.AppendLine($"ProviderName = {config.CertificateParameters.ProviderName}");
+            sb.AppendLine($"ProviderType = {config.CertificateParameters.ProviderType}");
             sb.AppendLine("RequestType = PKCS10");
-            sb.AppendLine("KeyUsage = 0xa0");
+            sb.AppendLine($"KeyUsage = {config.CertificateParameters.KeyUsage}");
             sb.AppendLine();
             sb.AppendLine("[EnhancedKeyUsageExtension]");
-            sb.AppendLine("OID=1.3.6.1.5.5.7.3.1");
+            foreach (var oid in config.CertificateParameters.EnhancedKeyUsageOIDs)
+            {
+                sb.AppendLine($"OID={oid}");
+            }
             sb.AppendLine();
             sb.AppendLine("[Extensions]");
             sb.AppendLine("2.5.29.17 = \"{text}\"");
@@ -598,12 +712,17 @@ namespace ZLGetCert.Services
         {
             try
             {
+                // SECURITY: Validate file paths to prevent command injection
+                infPath = ProcessArgumentValidator.ValidateFilePath(infPath, "INF Path");
+                csrPath = ProcessArgumentValidator.ValidateFilePath(csrPath, "CSR Path");
+
                 var process = new Process
                 {
                     StartInfo = new ProcessStartInfo
                     {
                         FileName = "certreq.exe",
-                        Arguments = $"-new \"{infPath}\" \"{csrPath}\"",
+                        // SECURITY: Use BuildArgumentString to safely escape file paths
+                        Arguments = BuildArgumentString("-new", infPath, csrPath),
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
@@ -611,9 +730,23 @@ namespace ZLGetCert.Services
                     }
                 };
 
-                _logger.LogDebug("Creating CSR: certreq.exe -new \"{0}\" \"{1}\"", infPath, csrPath);
+                _logger.LogDebug("Creating CSR with certreq.exe");
                 process.Start();
-                process.WaitForExit(30000); // 30 second timeout
+                
+                // Wait for exit with timeout and kill if necessary
+                if (!process.WaitForExit(30000))
+                {
+                    _logger.LogError("CSR creation timed out after 30 seconds");
+                    try
+                    {
+                        process.Kill();
+                    }
+                    catch
+                    {
+                        // Process may have already exited
+                    }
+                    return false;
+                }
 
                 if (process.ExitCode != 0)
                 {
@@ -624,6 +757,11 @@ namespace ZLGetCert.Services
 
                 _logger.LogInfo("CSR created successfully: {0}", csrPath);
                 return true;
+            }
+            catch (ArgumentException argEx)
+            {
+                _logger.LogError(argEx, "Invalid file path for CSR creation");
+                return false;
             }
             catch (Exception ex)
             {
@@ -639,13 +777,21 @@ namespace ZLGetCert.Services
         {
             try
             {
+                // SECURITY: Validate all inputs to prevent command injection
+                caServer = ProcessArgumentValidator.ValidateCAServerName(caServer, "CA Server");
+                csrPath = ProcessArgumentValidator.ValidateFilePath(csrPath, "CSR Path");
+                cerPath = ProcessArgumentValidator.ValidateFilePath(cerPath, "CER Path");
+                pfxPath = ProcessArgumentValidator.ValidateFilePath(pfxPath, "PFX Path");
+
                 var caConfig = $"{caServer}\\{caServer.Split('.')[0].ToUpper()}";
+                
                 var process = new Process
                 {
                     StartInfo = new ProcessStartInfo
                     {
                         FileName = "certreq.exe",
-                        Arguments = $"-config \"{caConfig}\" -submit \"{csrPath}\" \"{cerPath}\" \"{pfxPath}\"",
+                        // SECURITY: Use BuildArgumentString to safely escape all arguments
+                        Arguments = BuildArgumentString("-config", caConfig, "-submit", csrPath, cerPath, pfxPath),
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
@@ -653,10 +799,23 @@ namespace ZLGetCert.Services
                     }
                 };
 
-                _logger.LogDebug("Submitting to CA: certreq.exe -config \"{0}\" -submit \"{1}\" \"{2}\" \"{3}\"", 
-                    caConfig, csrPath, cerPath, pfxPath);
+                _logger.LogDebug("Submitting CSR to CA");
                 process.Start();
-                process.WaitForExit(60000); // 60 second timeout
+                
+                // Wait for exit with timeout and kill if necessary
+                if (!process.WaitForExit(60000))
+                {
+                    _logger.LogError("CA submission timed out after 60 seconds");
+                    try
+                    {
+                        process.Kill();
+                    }
+                    catch
+                    {
+                        // Process may have already exited
+                    }
+                    return false;
+                }
 
                 if (process.ExitCode != 0)
                 {
@@ -667,6 +826,11 @@ namespace ZLGetCert.Services
 
                 _logger.LogInfo("Successfully submitted to CA and received certificate");
                 return true;
+            }
+            catch (ArgumentException argEx)
+            {
+                _logger.LogError(argEx, "Invalid input for CA submission");
+                return false;
             }
             catch (Exception ex)
             {
@@ -771,12 +935,16 @@ namespace ZLGetCert.Services
         {
             try
             {
+                // SECURITY: Validate thumbprint format to prevent command injection
+                thumbprint = ProcessArgumentValidator.ValidateThumbprint(thumbprint, "Thumbprint");
+
                 var process = new Process
                 {
                     StartInfo = new ProcessStartInfo
                     {
                         FileName = "certutil.exe",
-                        Arguments = $"-repairstore my \"{thumbprint}\"",
+                        // SECURITY: Use BuildArgumentString to safely escape thumbprint
+                        Arguments = BuildArgumentString("-repairstore", "my", thumbprint),
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
@@ -785,9 +953,27 @@ namespace ZLGetCert.Services
                 };
 
                 process.Start();
-                process.WaitForExit(10000); // 10 second timeout
+                
+                // Wait for exit with timeout and kill if necessary
+                if (!process.WaitForExit(10000))
+                {
+                    _logger.LogWarning("Certificate repair timed out after 10 seconds");
+                    try
+                    {
+                        process.Kill();
+                    }
+                    catch
+                    {
+                        // Process may have already exited
+                    }
+                    return;
+                }
 
                 _logger.LogInfo("Certificate store repair completed");
+            }
+            catch (ArgumentException argEx)
+            {
+                _logger.LogError(argEx, "Invalid thumbprint for certificate repair");
             }
             catch (Exception ex)
             {
@@ -864,8 +1050,16 @@ namespace ZLGetCert.Services
         /// </summary>
         private string GetPasswordFromSecureString(SecureString securePassword)
         {
-            if (securePassword == null)
-                return _configService.GetConfiguration().DefaultSettings.DefaultPassword;
+            // Password is required - no defaults for security
+            if (securePassword == null || securePassword.Length == 0)
+            {
+                _logger.LogError("Password is required for certificate operations");
+                throw new ArgumentException(
+                    "Password is required for certificate operations. " +
+                    "Default passwords are no longer supported for security reasons. " +
+                    "Please enter a strong password when generating certificates.",
+                    nameof(securePassword));
+            }
 
             var ptr = IntPtr.Zero;
             try

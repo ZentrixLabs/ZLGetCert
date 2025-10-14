@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Security;
 using System.Windows.Input;
 using ZLGetCert.Models;
@@ -13,7 +14,7 @@ namespace ZLGetCert.ViewModels
     /// <summary>
     /// ViewModel for certificate request form
     /// </summary>
-    public class CertificateRequestViewModel : BaseViewModel
+    public class CertificateRequestViewModel : BaseViewModel, IDisposable
     {
         private string _hostName;
         private string _fqdn;
@@ -23,15 +24,16 @@ namespace ZLGetCert.ViewModels
         private string _ou;
         private string _caServer;
         private string _template;
-        private CertificateType _type;
         private string _csrFilePath;
         private bool _extractPemKey;
         private bool _extractCaBundle;
-        private string _pfxPassword;
-        private string _confirmPassword;
+        private bool _isWildcard;
+        private SecureString _pfxPassword;
+        private SecureString _confirmPassword;
         private bool _showPassword;
         private bool _showConfirmPassword;
         private readonly CertificateService _certificateService;
+        private bool _disposed = false;
 
         public CertificateRequestViewModel()
         {
@@ -43,18 +45,19 @@ namespace ZLGetCert.ViewModels
             IpSans = new ObservableCollection<SanEntry>();
 
             // Initialize properties
-            _type = CertificateType.Standard;
             _company = "example.com";
             _ou = "IT";
             _caServer = "";
             _template = "";
             _extractPemKey = true; // Default to true since it's always available
             _extractCaBundle = true; // Default to true - extract CA chain
+            _isWildcard = false;
             _showPassword = false;
             _showConfirmPassword = false;
 
             // Initialize commands
             BrowseCsrCommand = new RelayCommand(BrowseCsr);
+            ImportFromCSRCommand = new RelayCommand(ImportFromCSR);
             TogglePasswordVisibilityCommand = new RelayCommand(TogglePasswordVisibility);
             ToggleConfirmPasswordVisibilityCommand = new RelayCommand(ToggleConfirmPasswordVisibility);
 
@@ -168,38 +171,53 @@ namespace ZLGetCert.ViewModels
             get => _template;
             set
             {
-                SetProperty(ref _template, value);
-                OnPropertyChanged(nameof(CanGenerate));
+                if (SetProperty(ref _template, value))
+                {
+                    // CRITICAL FIX: Auto-configure certificate type based on selected template
+                    AutoConfigureFromTemplate(value);
+                    OnPropertyChanged(nameof(CanGenerate));
+                }
             }
         }
 
         /// <summary>
-        /// Type of certificate request
+        /// Whether this is a wildcard certificate (*.domain.com)
+        /// Only applicable for web server templates
         /// </summary>
-        public CertificateType Type
+        public bool IsWildcard
         {
-            get => _type;
+            get => _isWildcard;
             set
             {
-                if (SetProperty(ref _type, value))
+                if (SetProperty(ref _isWildcard, value))
                 {
-                    // Clear only the fields that are specific to certificate type
-                    if (value == CertificateType.FromCSR)
-                    {
-                        // Clear hostname/FQDN fields for CSR type
-                        HostName = "";
-                        FQDN = "";
-                    }
-                    else if (value == CertificateType.Wildcard)
-                    {
-                        // Clear hostname for wildcard type (FQDN will be auto-generated)
-                        HostName = "";
-                    }
-                    
-                    OnPropertyChanged(nameof(IsWildcard));
-                    OnPropertyChanged(nameof(IsFromCSR));
+                    // Update FQDN when wildcard changes
+                    UpdateFQDN();
                     OnPropertyChanged(nameof(CanGenerate));
+                    OnPropertyChanged(nameof(CertificateName));
                 }
+            }
+        }
+
+        /// <summary>
+        /// Internal certificate type - derived from template selection
+        /// NOT exposed to UI - template selection determines this automatically
+        /// </summary>
+        internal CertificateType Type
+        {
+            get
+            {
+                // Derive type from template
+                if (string.IsNullOrEmpty(Template))
+                    return CertificateType.Custom;
+
+                var detectedType = CertificateTemplate.DetectTypeFromTemplateName(Template);
+                
+                // If it's a web server template and wildcard is checked, return Wildcard
+                if ((detectedType == CertificateType.Standard) && IsWildcard)
+                    return CertificateType.Wildcard;
+                
+                return detectedType;
             }
         }
 
@@ -235,29 +253,39 @@ namespace ZLGetCert.ViewModels
         }
 
         /// <summary>
-        /// PFX password
+        /// PFX password (SecureString for security)
         /// </summary>
-        public string PfxPassword
+        public SecureString PfxPassword
         {
             get => _pfxPassword;
             set
             {
-                SetProperty(ref _pfxPassword, value);
-                OnPropertyChanged(nameof(PasswordStrength));
-                OnPropertyChanged(nameof(CanGenerate));
+                // Dispose old SecureString
+                _pfxPassword?.Dispose();
+                
+                if (SetProperty(ref _pfxPassword, value))
+                {
+                    OnPropertyChanged(nameof(PasswordStrength));
+                    OnPropertyChanged(nameof(CanGenerate));
+                }
             }
         }
 
         /// <summary>
-        /// Confirm password
+        /// Confirm password (SecureString for security)
         /// </summary>
-        public string ConfirmPassword
+        public SecureString ConfirmPassword
         {
             get => _confirmPassword;
             set
             {
-                SetProperty(ref _confirmPassword, value);
-                OnPropertyChanged(nameof(CanGenerate));
+                // Dispose old SecureString
+                _confirmPassword?.Dispose();
+                
+                if (SetProperty(ref _confirmPassword, value))
+                {
+                    OnPropertyChanged(nameof(CanGenerate));
+                }
             }
         }
 
@@ -300,14 +328,28 @@ namespace ZLGetCert.ViewModels
         public List<string> AvailableCAs { get; set; }
 
         /// <summary>
-        /// Whether this is a wildcard certificate request
+        /// Whether wildcard checkbox should be visible (only for web server templates)
         /// </summary>
-        public bool IsWildcard => Type == CertificateType.Wildcard;
+        public bool ShowWildcardOption
+        {
+            get
+            {
+                var type = Type;
+                return type == CertificateType.Standard || type == CertificateType.Wildcard;
+            }
+        }
 
         /// <summary>
-        /// Whether this is a CSR-based certificate request
+        /// Whether hostname/FQDN fields should be visible (not for client auth, code signing, email)
         /// </summary>
-        public bool IsFromCSR => Type == CertificateType.FromCSR;
+        public bool ShowHostnameFields
+        {
+            get
+            {
+                var type = Type;
+                return type == CertificateType.Standard || type == CertificateType.Wildcard;
+            }
+        }
 
         /// <summary>
         /// Certificate name for display
@@ -316,7 +358,7 @@ namespace ZLGetCert.ViewModels
         {
             get
             {
-                if (Type == CertificateType.Wildcard)
+                if (IsWildcard)
                 {
                     return FQDN?.Replace("*", "_") ?? "wildcard";
                 }
@@ -331,10 +373,10 @@ namespace ZLGetCert.ViewModels
         {
             get
             {
-                if (string.IsNullOrEmpty(PfxPassword))
+                if (PfxPassword == null || PfxPassword.Length == 0)
                     return "No password set";
 
-                var strength = SecureStringHelper.ValidatePasswordStrength(SecureStringHelper.StringToSecureString(PfxPassword));
+                var strength = SecureStringHelper.ValidatePasswordStrength(PfxPassword);
                 switch (strength)
                 {
                     case ZLGetCert.Utilities.PasswordStrength.Weak:
@@ -360,24 +402,49 @@ namespace ZLGetCert.ViewModels
                 if (string.IsNullOrWhiteSpace(CAServer) || string.IsNullOrWhiteSpace(Template))
                     return false;
 
-                if (Type == CertificateType.FromCSR)
+                // Password is always required
+                if (PfxPassword == null || PfxPassword.Length == 0)
+                    return false;
+
+                // For FromCSR workflow (when CSR file path is set), less validation needed
+                if (!string.IsNullOrWhiteSpace(CsrFilePath))
                 {
-                    return !string.IsNullOrWhiteSpace(CsrFilePath) && 
-                           !string.IsNullOrWhiteSpace(PfxPassword);
+                    return true; // CSR file path + password is sufficient
                 }
 
-                return !string.IsNullOrWhiteSpace(HostName) &&
-                       !string.IsNullOrWhiteSpace(Location) &&
+                // Check if passwords match
+                bool passwordsMatch = true;
+                if (ConfirmPassword != null && ConfirmPassword.Length > 0)
+                {
+                    passwordsMatch = SecureStringHelper.SecureStringEquals(PfxPassword, ConfirmPassword);
+                }
+
+                // For web server templates (Standard/Wildcard), require hostname
+                var currentType = Type;
+                if (currentType == CertificateType.Standard || currentType == CertificateType.Wildcard)
+                {
+                    return !string.IsNullOrWhiteSpace(HostName) &&
+                           !string.IsNullOrWhiteSpace(Location) &&
+                           !string.IsNullOrWhiteSpace(State) &&
+                           passwordsMatch;
+                }
+                
+                // For other templates (ClientAuth, CodeSigning, Email), hostname not required
+                return !string.IsNullOrWhiteSpace(Location) &&
                        !string.IsNullOrWhiteSpace(State) &&
-                       !string.IsNullOrWhiteSpace(PfxPassword) &&
-                       (string.IsNullOrEmpty(ConfirmPassword) || PfxPassword == ConfirmPassword);
+                       passwordsMatch;
             }
         }
 
         /// <summary>
-        /// Browse for CSR file command
+        /// Browse for CSR file command (for file path selection)
         /// </summary>
         public ICommand BrowseCsrCommand { get; }
+
+        /// <summary>
+        /// Import certificate from existing CSR file command (separate workflow)
+        /// </summary>
+        public ICommand ImportFromCSRCommand { get; }
 
         /// <summary>
         /// Toggle password visibility command
@@ -388,6 +455,11 @@ namespace ZLGetCert.ViewModels
         /// Toggle confirm password visibility command
         /// </summary>
         public ICommand ToggleConfirmPasswordVisibilityCommand { get; }
+
+        /// <summary>
+        /// Whether the CSR import workflow is active
+        /// </summary>
+        public bool IsCSRWorkflow => !string.IsNullOrWhiteSpace(CsrFilePath);
 
         /// <summary>
         /// Add DNS SAN entry
@@ -432,11 +504,16 @@ namespace ZLGetCert.ViewModels
             State = "";
             Company = "example.com";
             OU = "IT";
-            Type = CertificateType.Standard;
             CsrFilePath = "";
             ExtractPemKey = false;
-            PfxPassword = "";
-            ConfirmPassword = "";
+            IsWildcard = false;
+            
+            // Dispose and clear SecureStrings
+            PfxPassword?.Dispose();
+            PfxPassword = null;
+            ConfirmPassword?.Dispose();
+            ConfirmPassword = null;
+            
             ShowPassword = false;
             ShowConfirmPassword = false;
 
@@ -458,8 +535,13 @@ namespace ZLGetCert.ViewModels
             Location = "";
             State = "";
             CsrFilePath = "";
-            PfxPassword = "";
-            ConfirmPassword = "";
+            
+            // Dispose and clear SecureStrings
+            PfxPassword?.Dispose();
+            PfxPassword = null;
+            ConfirmPassword?.Dispose();
+            ConfirmPassword = null;
+            
             ShowPassword = false;
             ShowConfirmPassword = false;
 
@@ -476,6 +558,15 @@ namespace ZLGetCert.ViewModels
         /// </summary>
         public CertificateRequest ToCertificateRequest()
         {
+            // Determine certificate type from template and wildcard setting
+            var certType = Type; // Uses internal Type property that derives from template
+            
+            // Override to FromCSR if we have a CSR file path
+            if (!string.IsNullOrWhiteSpace(CsrFilePath))
+            {
+                certType = CertificateType.FromCSR;
+            }
+
             var request = new CertificateRequest
             {
                 HostName = HostName,
@@ -486,12 +577,12 @@ namespace ZLGetCert.ViewModels
                 OU = OU,
                 CAServer = CAServer,
                 Template = Template,
-                Type = Type,
+                Type = certType, // Type is now derived, not user-selected
                 CsrFilePath = CsrFilePath,
                 ExtractPemKey = ExtractPemKey,
                 ExtractCaBundle = ExtractCaBundle,
-                PfxPassword = SecureStringHelper.StringToSecureString(PfxPassword),
-                ConfirmPassword = !string.IsNullOrEmpty(ConfirmPassword)
+                PfxPassword = PfxPassword?.Copy(), // Create a copy of SecureString
+                ConfirmPassword = ConfirmPassword != null && ConfirmPassword.Length > 0
             };
 
             // Copy SANs
@@ -519,7 +610,7 @@ namespace ZLGetCert.ViewModels
         /// </summary>
         private void UpdateFQDN()
         {
-            if (Type == CertificateType.Wildcard)
+            if (IsWildcard)
             {
                 FQDN = $"*.{Company}";
             }
@@ -530,7 +621,7 @@ namespace ZLGetCert.ViewModels
         }
 
         /// <summary>
-        /// Browse for CSR file
+        /// Browse for CSR file (opens file dialog)
         /// </summary>
         private void BrowseCsr()
         {
@@ -543,6 +634,42 @@ namespace ZLGetCert.ViewModels
             if (dialog.ShowDialog() == true)
             {
                 CsrFilePath = dialog.FileName;
+                OnPropertyChanged(nameof(IsCSRWorkflow));
+            }
+        }
+
+        /// <summary>
+        /// Import certificate from existing CSR file
+        /// This is a separate workflow from generating new certificates
+        /// </summary>
+        private void ImportFromCSR()
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Certificate Request Files (*.csr;*.req)|*.csr;*.req|All Files (*.*)|*.*",
+                Title = "Select CSR File to Import and Submit to CA"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                CsrFilePath = dialog.FileName;
+                OnPropertyChanged(nameof(IsCSRWorkflow));
+                OnPropertyChanged(nameof(CanGenerate));
+                
+                System.Windows.MessageBox.Show(
+                    "CSR file loaded successfully!\n\n" +
+                    "The CSR already contains:\n" +
+                    "✓ Hostname and domain information\n" +
+                    "✓ Organization details (location, state, company, OU)\n" +
+                    "✓ Subject Alternative Names (SANs)\n\n" +
+                    "You only need to:\n" +
+                    "1. Select a CA Server\n" +
+                    "2. Select a Template (for submission)\n" +
+                    "3. Enter a PFX password\n" +
+                    "4. Click Generate Certificate",
+                    "CSR Import",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
             }
         }
 
@@ -585,6 +712,74 @@ namespace ZLGetCert.ViewModels
                 // Log error but don't crash the UI
                 AvailableTemplates = new List<CertificateTemplate>();
                 OnPropertyChanged(nameof(AvailableTemplates));
+            }
+        }
+
+        /// <summary>
+        /// Auto-configure UI based on selected template
+        /// CRITICAL: Determines what fields are shown and certificate configuration
+        /// </summary>
+        private void AutoConfigureFromTemplate(string templateName)
+        {
+            if (string.IsNullOrEmpty(templateName))
+            {
+                OnPropertyChanged(nameof(ShowWildcardOption));
+                OnPropertyChanged(nameof(ShowHostnameFields));
+                return;
+            }
+
+            try
+            {
+                // Detect type to determine what UI elements to show
+                var detectedType = CertificateTemplate.DetectTypeFromTemplateName(templateName);
+                
+                System.Diagnostics.Debug.WriteLine(
+                    $"Template '{templateName}' detected as type '{detectedType}'");
+                
+                // Update UI visibility
+                OnPropertyChanged(nameof(ShowWildcardOption));
+                OnPropertyChanged(nameof(ShowHostnameFields));
+                
+                // Reset wildcard if not a web server template
+                if (detectedType != CertificateType.Standard && detectedType != CertificateType.Wildcard)
+                {
+                    IsWildcard = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't crash
+                System.Diagnostics.Debug.WriteLine($"Error auto-configuring from template: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Dispose of SecureStrings to clear passwords from memory
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Protected dispose method
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    // Dispose SecureStrings to clear passwords from memory
+                    _pfxPassword?.Dispose();
+                    _pfxPassword = null;
+                    
+                    _confirmPassword?.Dispose();
+                    _confirmPassword = null;
+                }
+                
+                _disposed = true;
             }
         }
     }

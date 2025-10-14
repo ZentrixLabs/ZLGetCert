@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -113,6 +114,67 @@ namespace ZLGetCert.Utilities
         }
 
         /// <summary>
+        /// Validate template/type match to prevent invalid certificates
+        /// CRITICAL: Prevents template/type mismatches
+        /// </summary>
+        public static void ValidateTemplateTypeMatch(
+            string templateName,
+            CertificateType actualType,
+            List<string> configuredOIDs,
+            ValidationResult result)
+        {
+            if (string.IsNullOrWhiteSpace(templateName))
+                return;
+
+            // Skip validation for FromCSR - CSR defines the type
+            if (actualType == CertificateType.FromCSR)
+                return;
+
+            // Detect expected type from template name
+            var expectedType = Models.CertificateTemplate.DetectTypeFromTemplateName(templateName);
+
+            // If expected type is Custom, we can't validate - allow anything
+            if (expectedType == CertificateType.Custom)
+                return;
+
+            // Check if template and type match
+            if (expectedType != actualType)
+            {
+                result.AddError(
+                    $"Template/Type mismatch: Template '{templateName}' suggests type '{expectedType}', " +
+                    $"but '{actualType}' was selected. This will create an invalid certificate. " +
+                    $"The certificate type has been auto-configured to match the template.");
+            }
+
+            // Validate OIDs match the certificate type
+            var expectedOIDs = Models.CertificateTemplate.GetOIDsForType(actualType);
+            
+            if (expectedOIDs.Any() && configuredOIDs != null)
+            {
+                foreach (var expectedOID in expectedOIDs)
+                {
+                    if (!configuredOIDs.Contains(expectedOID))
+                    {
+                        result.AddError(
+                            $"Certificate type '{actualType}' requires OID {expectedOID}, " +
+                            $"but it is not configured. This will create an invalid certificate.");
+                    }
+                }
+
+                // Check for incorrect OIDs
+                foreach (var configuredOID in configuredOIDs)
+                {
+                    if (!expectedOIDs.Contains(configuredOID) && !string.IsNullOrEmpty(configuredOID))
+                    {
+                        result.AddWarning(
+                            $"Configured OID {configuredOID} may not be appropriate for certificate type '{actualType}'. " +
+                            $"Expected OID(s): {string.Join(", ", expectedOIDs)}");
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Validate common fields
         /// </summary>
         private static void ValidateCommonFields(CertificateRequest request, ValidationResult result)
@@ -147,6 +209,10 @@ namespace ZLGetCert.Utilities
 
             // Validate SANs
             ValidateSans(request.DnsSans, request.IpSans, result);
+
+            // CRITICAL: Validate template/type match
+            // This is commented out here because it requires config, will be done in CertificateService
+            // ValidateTemplateTypeMatch(request.Template, request.Type, config.EnhancedKeyUsageOIDs, result);
         }
 
         /// <summary>
@@ -244,7 +310,7 @@ namespace ZLGetCert.Utilities
         }
 
         /// <summary>
-        /// Validate password strength
+        /// Validate password strength (basic check)
         /// </summary>
         public static bool IsPasswordStrong(string password)
         {
@@ -255,6 +321,252 @@ namespace ZLGetCert.Utilities
                    password.Any(char.IsUpper) && 
                    password.Any(char.IsLower) && 
                    password.Any(char.IsDigit);
+        }
+
+        /// <summary>
+        /// Validate password meets security requirements and check against common passwords
+        /// </summary>
+        /// <param name="password">Password to validate</param>
+        /// <param name="errors">List of validation errors</param>
+        /// <returns>True if password is acceptable, false otherwise</returns>
+        public static bool IsPasswordAcceptable(string password, out List<string> errors)
+        {
+            errors = new List<string>();
+            
+            if (string.IsNullOrEmpty(password))
+            {
+                errors.Add("Password is required");
+                return false;
+            }
+            
+            // Check minimum length
+            if (password.Length < 8)
+                errors.Add("Password must be at least 8 characters long");
+            
+            // Check for uppercase letters
+            if (!password.Any(char.IsUpper))
+                errors.Add("Password must contain at least one uppercase letter");
+            
+            // Check for lowercase letters
+            if (!password.Any(char.IsLower))
+                errors.Add("Password must contain at least one lowercase letter");
+            
+            // Check for digits
+            if (!password.Any(char.IsDigit))
+                errors.Add("Password must contain at least one number");
+            
+            // Recommend special characters for strong passwords
+            if (!password.Any(c => char.IsPunctuation(c) || char.IsSymbol(c)))
+            {
+                // This is a warning, not an error
+                if (password.Length < 12)
+                    errors.Add("Password should contain special characters for better security");
+            }
+            
+            // Check against common weak passwords
+            string[] commonPasswords = { 
+                "password", "Password1", "Password123", "password123",
+                "123456", "12345678", "admin", "Admin123",
+                "letmein", "welcome", "Welcome1", "monkey", 
+                "qwerty", "abc123", "test", "Test123",
+                "user", "User123", "temp", "Temp123",
+                "changeme", "ChangeMe1", "default", "Default1"
+            };
+            
+            if (commonPasswords.Contains(password, StringComparer.OrdinalIgnoreCase))
+            {
+                errors.Add("Password is too common and easily guessed. Please choose a more unique password.");
+            }
+            
+            return errors.Count == 0;
+        }
+
+        /// <summary>
+        /// Get password strength level
+        /// </summary>
+        /// <param name="password">Password to evaluate</param>
+        /// <returns>Strength description</returns>
+        public static string GetPasswordStrength(string password)
+        {
+            if (string.IsNullOrEmpty(password))
+                return "Empty";
+
+            int score = 0;
+            
+            // Length scoring
+            if (password.Length >= 8) score++;
+            if (password.Length >= 12) score++;
+            if (password.Length >= 16) score++;
+            
+            // Complexity scoring
+            if (password.Any(char.IsUpper)) score++;
+            if (password.Any(char.IsLower)) score++;
+            if (password.Any(char.IsDigit)) score++;
+            if (password.Any(c => char.IsPunctuation(c) || char.IsSymbol(c))) score++;
+            
+            // Check for common patterns
+            if (password.Contains("123") || password.Contains("abc") || password.Contains("qwerty"))
+                score -= 2;
+            
+            if (score <= 2)
+                return "Weak";
+            else if (score <= 4)
+                return "Medium";
+            else if (score <= 6)
+                return "Strong";
+            else
+                return "Very Strong";
+        }
+    }
+
+    /// <summary>
+    /// Process argument validation to prevent command injection attacks
+    /// </summary>
+    public static class ProcessArgumentValidator
+    {
+        /// <summary>
+        /// Validate and sanitize file path for use in process arguments
+        /// Prevents command injection and path traversal attacks
+        /// </summary>
+        /// <param name="path">File path to validate</param>
+        /// <param name="parameterName">Parameter name for error messages</param>
+        /// <returns>Validated absolute path</returns>
+        public static string ValidateFilePath(string path, string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                throw new ArgumentException($"{parameterName} cannot be empty", parameterName);
+
+            // Check for command injection characters
+            char[] dangerousChars = { '&', '|', ';', '>', '<', '^', '`', '$', '(', ')', '{', '}', '\n', '\r' };
+            if (path.IndexOfAny(dangerousChars) >= 0)
+            {
+                throw new ArgumentException(
+                    $"{parameterName} contains invalid characters that could be used for command injection. " +
+                    "File paths should only contain standard path characters.", 
+                    parameterName);
+            }
+
+            // Normalize and validate path
+            try
+            {
+                path = Path.GetFullPath(path);
+            }
+            catch (Exception ex)
+            {
+                throw new ArgumentException($"Invalid file path in {parameterName}: {ex.Message}", parameterName, ex);
+            }
+
+            // Additional security: Check for suspicious patterns
+            if (path.Contains("..\\") || path.Contains("../"))
+            {
+                throw new ArgumentException(
+                    $"{parameterName} contains path traversal sequences (../) which are not allowed",
+                    parameterName);
+            }
+
+            return path;
+        }
+
+        /// <summary>
+        /// Validate CA server name format to prevent injection
+        /// </summary>
+        /// <param name="serverName">Server name to validate</param>
+        /// <param name="parameterName">Parameter name for error messages</param>
+        /// <returns>Validated server name</returns>
+        public static string ValidateCAServerName(string serverName, string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(serverName))
+                throw new ArgumentException($"{parameterName} cannot be empty", parameterName);
+
+            // CA server should be a valid hostname/FQDN
+            // Allow letters, numbers, dots, hyphens only (standard DNS naming)
+            var regex = new Regex(@"^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$");
+            
+            if (!regex.IsMatch(serverName))
+            {
+                throw new ArgumentException(
+                    $"{parameterName} must be a valid hostname or FQDN. " +
+                    "Only letters, numbers, dots, and hyphens are allowed.", 
+                    parameterName);
+            }
+
+            if (serverName.Length > 253)
+            {
+                throw new ArgumentException(
+                    $"{parameterName} exceeds maximum length of 253 characters for a DNS name", 
+                    parameterName);
+            }
+
+            // Check for suspicious patterns
+            if (serverName.Contains("..") || serverName.StartsWith("-") || serverName.EndsWith("-"))
+            {
+                throw new ArgumentException(
+                    $"{parameterName} contains invalid patterns for a server name",
+                    parameterName);
+            }
+
+            return serverName;
+        }
+
+        /// <summary>
+        /// Validate certificate thumbprint format
+        /// </summary>
+        /// <param name="thumbprint">Thumbprint to validate</param>
+        /// <param name="parameterName">Parameter name for error messages</param>
+        /// <returns>Validated thumbprint in uppercase</returns>
+        public static string ValidateThumbprint(string thumbprint, string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(thumbprint))
+                throw new ArgumentException($"{parameterName} cannot be empty", parameterName);
+
+            // Remove spaces and convert to uppercase
+            thumbprint = thumbprint.Replace(" ", "").ToUpperInvariant();
+
+            // Thumbprint should be exactly 40 hex characters (SHA-1 hash)
+            var regex = new Regex(@"^[0-9A-F]{40}$");
+            
+            if (!regex.IsMatch(thumbprint))
+            {
+                throw new ArgumentException(
+                    $"{parameterName} must be a 40-character hexadecimal string (SHA-1 hash). " +
+                    "Current format is invalid.", 
+                    parameterName);
+            }
+
+            return thumbprint;
+        }
+
+        /// <summary>
+        /// Validate template name to prevent injection
+        /// </summary>
+        /// <param name="templateName">Template name to validate</param>
+        /// <param name="parameterName">Parameter name for error messages</param>
+        /// <returns>Validated template name</returns>
+        public static string ValidateTemplateName(string templateName, string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(templateName))
+                throw new ArgumentException($"{parameterName} cannot be empty", parameterName);
+
+            // Template names should only contain safe characters
+            // Allow letters, numbers, spaces, underscores, hyphens
+            var regex = new Regex(@"^[a-zA-Z0-9_\-\s]+$");
+            
+            if (!regex.IsMatch(templateName))
+            {
+                throw new ArgumentException(
+                    $"{parameterName} contains invalid characters. " +
+                    "Template names should only contain letters, numbers, spaces, underscores, and hyphens.", 
+                    parameterName);
+            }
+
+            if (templateName.Length > 100)
+            {
+                throw new ArgumentException(
+                    $"{parameterName} exceeds maximum length of 100 characters",
+                    parameterName);
+            }
+
+            return templateName;
         }
     }
 

@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:enums="clr-namespace:ZLGetCert.Enums"
+        xmlns:local="clr-namespace:ZLGetCert.Converters"
         mc:Ignorable="d"
         Title="ZLGetCert - Certificate Management" 
         Height="800" 
@@ -14,6 +15,11 @@
         Icon="pack://application:,,,/ZLGetCert_icon_v2.ico">
     
     <Window.Resources>
+        <!-- Converters -->
+        <local:EnumToBoolConverter x:Key="EnumToBoolConverter"/>
+        <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <local:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        
         <Style x:Key="HeaderTextStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="18"/>
             <Setter Property="FontWeight" Value="Bold"/>
@@ -146,28 +152,30 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Certificate Type Selection Card -->
-                    <Border Style="{StaticResource CardStyle}">
+                    <!-- Wildcard Option Card (Only for Web Server templates) -->
+                    <Border Style="{StaticResource CardStyle}"
+                            Visibility="{Binding CertificateRequest.ShowWildcardOption, Converter={StaticResource BoolToVisibilityConverter}}">
                         <StackPanel>
-                            <TextBlock Text="Certificate Type" Style="{StaticResource SectionHeaderStyle}"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                <RadioButton Content="Standard Certificate" 
-                                             IsChecked="{Binding CertificateRequest.Type, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Standard}"
-                                             Margin="0,0,20,0"/>
-                                <RadioButton Content="Wildcard Certificate" 
-                                             IsChecked="{Binding CertificateRequest.Type, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Wildcard}"
-                                             Margin="0,0,20,0"/>
-                                <RadioButton Content="From CSR File" 
-                                             IsChecked="{Binding CertificateRequest.Type, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=FromCSR}"/>
-                            </StackPanel>
+                            <TextBlock Text="Certificate Options" Style="{StaticResource SectionHeaderStyle}"/>
+                            <CheckBox Content="Wildcard Certificate (*.domain.com)"
+                                      IsChecked="{Binding CertificateRequest.IsWildcard}"
+                                      ToolTip="Generate a wildcard certificate valid for all subdomains"
+                                      Margin="0,5,0,10"/>
+                            <TextBlock Text="A wildcard certificate can secure *.company.com (all subdomains)" 
+                                       Style="{StaticResource StatusTextStyle}"
+                                       TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
 
-                    <!-- CSR File Selection Card (for FromCSR type) -->
+                    <!-- CSR Import Option (shown when CSR file is selected) -->
                     <Border Style="{StaticResource CardStyle}" 
-                            Visibility="{Binding CertificateRequest.IsFromCSR, Converter={StaticResource BoolToVisibilityConverter}}">
+                            Visibility="{Binding CertificateRequest.IsCSRWorkflow, Converter={StaticResource BoolToVisibilityConverter}}">
                         <StackPanel>
-                            <TextBlock Text="CSR File" Style="{StaticResource SectionHeaderStyle}"/>
+                            <TextBlock Text="CSR File Import" Style="{StaticResource SectionHeaderStyle}"/>
+                            <TextBlock Text="✅ CSR file loaded - hostname, organization info, and SANs from CSR" 
+                                       Foreground="Green"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,10"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -178,36 +186,47 @@
                                          IsReadOnly="True"
                                          Margin="0,0,10,0"/>
                                 <Button Grid.Column="1" 
-                                        Content="📁 Browse..." 
-                                        Command="{Binding CertificateRequest.BrowseCsrCommand}"
+                                        Content="❌ Clear" 
+                                        Click="ClearCSR_Click"
                                         Style="{StaticResource SecondaryButtonStyle}"/>
                             </Grid>
+                            <TextBlock Text="ℹ️ The CSR file already contains subject DN and SANs. You only need to select the CA server, template, and password." 
+                                       Style="{StaticResource StatusTextStyle}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,10,0,0"/>
                         </StackPanel>
                     </Border>
 
-                    <!-- Hostname and FQDN Card (for Standard and Wildcard types) -->
+                    <!-- Hostname and FQDN Card (Only for Web Server templates) -->
                     <Border Style="{StaticResource CardStyle}" 
-                            Visibility="{Binding CertificateRequest.IsFromCSR, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                            Visibility="{Binding CertificateRequest.ShowHostnameFields, Converter={StaticResource BoolToVisibilityConverter}}">
                         <StackPanel>
                             <TextBlock Text="Domain Information" Style="{StaticResource SectionHeaderStyle}"/>
                             
                             <StackPanel Style="{StaticResource FormGroupStyle}">
                                 <TextBlock Text="Hostname" Style="{StaticResource FieldLabelStyle}"/>
                                 <TextBox Text="{Binding CertificateRequest.HostName}" 
-                                         IsEnabled="{Binding CertificateRequest.IsWildcard, Converter={StaticResource InverseBoolConverter}}"/>
+                                         IsEnabled="{Binding CertificateRequest.IsWildcard, Converter={StaticResource InverseBoolConverter}}"
+                                         ToolTip="Server hostname (e.g., 'www', 'api', 'mail')"/>
+                                <TextBlock Text="Not needed for wildcard certificates" 
+                                           Visibility="{Binding CertificateRequest.IsWildcard, Converter={StaticResource BoolToVisibilityConverter}}"
+                                           Style="{StaticResource StatusTextStyle}"
+                                           Margin="0,2,0,0"/>
                             </StackPanel>
                             
                             <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="Fully Qualified Domain Name" Style="{StaticResource FieldLabelStyle}"/>
+                                <TextBlock Text="Fully Qualified Domain Name (FQDN)" Style="{StaticResource FieldLabelStyle}"/>
                                 <TextBox Text="{Binding CertificateRequest.FQDN}" 
                                          IsReadOnly="True"
-                                         Background="#F5F5F5"/>
+                                         Background="#F5F5F5"
+                                         ToolTip="Auto-generated from hostname and company domain"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
 
-                    <!-- Organization Information Card -->
-                    <Border Style="{StaticResource CardStyle}">
+                    <!-- Organization Information Card (Not needed for CSR import - already in CSR) -->
+                    <Border Style="{StaticResource CardStyle}"
+                            Visibility="{Binding CertificateRequest.IsCSRWorkflow, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                         <StackPanel>
                             <TextBlock Text="Organization Information" Style="{StaticResource SectionHeaderStyle}"/>
                             
@@ -249,9 +268,9 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- SANs Card (for Standard type only) -->
+                    <!-- SANs Card (Only for Web Server templates) -->
                     <Border Style="{StaticResource CardStyle}" 
-                            Visibility="{Binding CertificateRequest.IsFromCSR, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                            Visibility="{Binding CertificateRequest.ShowHostnameFields, Converter={StaticResource BoolToVisibilityConverter}}">
                         <StackPanel>
                             <TextBlock Text="Subject Alternative Names (SANs)" Style="{StaticResource SectionHeaderStyle}"/>
                             
@@ -379,8 +398,13 @@
                             <TextBlock Text="Actions" Style="{StaticResource SectionHeaderStyle}"/>
                             <StackPanel Orientation="Horizontal">
                                 <Button Content="🔧 Generate Certificate" 
-                                        Command="{Binding GenerateCommand}"
+                                        Command="{Binding GenerateCertificateCommand}"
                                         Style="{StaticResource PrimaryButtonStyle}"
+                                        Margin="0,0,10,0"/>
+                                <Button Content="📄 Import from CSR File..." 
+                                        Command="{Binding CertificateRequest.ImportFromCSRCommand}"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        ToolTip="Submit an existing Certificate Signing Request to the CA"
                                         Margin="0,0,10,0"/>
                                 <Button Content="💾 Save as Defaults" 
                                         Command="{Binding SaveAsDefaultsCommand}"

@@ -70,7 +70,17 @@ namespace ZLGetCert.Services
             try
             {
                 var json = File.ReadAllText(filePath);
-                return JsonConvert.DeserializeObject<AppConfiguration>(json);
+                var config = JsonConvert.DeserializeObject<AppConfiguration>(json);
+                
+                // Expand environment variables in file paths
+                if (config?.FilePaths != null)
+                {
+                    config.FilePaths.CertificateFolder = ExpandEnvironmentVariables(config.FilePaths.CertificateFolder);
+                    config.FilePaths.LogPath = ExpandEnvironmentVariables(config.FilePaths.LogPath);
+                    config.FilePaths.TempPath = ExpandEnvironmentVariables(config.FilePaths.TempPath);
+                }
+                
+                return config;
             }
             catch (Exception ex)
             {
@@ -107,7 +117,7 @@ namespace ZLGetCert.Services
                 {
                     KeyLength = 2048,
                     HashAlgorithm = "sha256",
-                    DefaultPassword = "password",
+                    DefaultPassword = "", // No default password for security
                     RequirePasswordConfirmation = true,
                     AutoCleanup = true,
                     RememberPassword = false
@@ -148,6 +158,25 @@ namespace ZLGetCert.Services
         {
             _configuration = null;
             LoadConfiguration();
+        }
+
+        /// <summary>
+        /// Expand environment variables in a path string
+        /// </summary>
+        private string ExpandEnvironmentVariables(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return path;
+
+            try
+            {
+                return Environment.ExpandEnvironmentVariables(path);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error expanding environment variables in path '{path}': {ex.Message}");
+                return path; // Return original path if expansion fails
+            }
         }
     }
 }

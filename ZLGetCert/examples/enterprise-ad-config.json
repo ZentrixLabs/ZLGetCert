@@ -1,27 +1,19 @@
 {
   "CertificateAuthority": {
-    "Server": "your-ca-server.example.com",
+    "Server": "ca.company.com",
     "Template": "WebServer",
-    "DefaultCompany": "example.com",
-    "DefaultOU": "IT"
+    "DefaultCompany": "Company Inc.",
+    "DefaultOU": "IT Department",
+    "DefaultLocation": "New York",
+    "DefaultState": "NY"
   },
   "FilePaths": {
-    "CertificateFolder": "%USERPROFILE%\\Documents\\Certificates",
+    "CertificateFolder": "\\\\fileserver\\certs",
     "LogPath": "%APPDATA%\\ZLGetCert\\Logs",
     "TempPath": "%TEMP%\\ZLGetCert"
   },
-  "OpenSSL": {
-    "ExecutablePath": "",
-    "AutoDetect": true,
-    "CommonPaths": [
-      "C:\\Program Files\\OpenSSL-Win64\\bin\\openssl.exe",
-      "C:\\Program Files (x86)\\OpenSSL-Win32\\bin\\openssl.exe",
-      "C:\\OpenSSL-Win64\\bin\\openssl.exe",
-      "C:\\OpenSSL-Win32\\bin\\openssl.exe"
-    ]
-  },
   "DefaultSettings": {
-    "KeyLength": 2048,
+    "KeyLength": 4096,
     "HashAlgorithm": "sha256",
     "DefaultPassword": "",
     "RequirePasswordConfirmation": true,
@@ -46,8 +38,8 @@
     "LogLevel": "Information",
     "LogToFile": true,
     "LogToConsole": false,
-    "MaxLogFileSize": "10MB",
-    "MaxLogFiles": 5,
+    "MaxLogFileSize": "50MB",
+    "MaxLogFiles": 10,
     "AvailableLogLevels": ["Trace", "Debug", "Information", "Warning", "Error", "Fatal"]
   }
 }

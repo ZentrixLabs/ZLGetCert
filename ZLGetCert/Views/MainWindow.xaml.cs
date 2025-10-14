@@ -27,5 +27,13 @@ namespace ZLGetCert.Views
             };
             aboutWindow.ShowDialog();
         }
+
+        private void ClearCSR_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm)
+            {
+                vm.CertificateRequest.CsrFilePath = "";
+            }
+        }
     }
 }
