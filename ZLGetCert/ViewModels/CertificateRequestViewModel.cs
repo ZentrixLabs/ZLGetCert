@@ -36,6 +36,7 @@ namespace ZLGetCert.ViewModels
         private bool _showPassword;
         private bool _showConfirmPassword;
         private bool _securityWarningExpanded;
+        private bool _isFqdnManuallyEdited;
         private readonly CertificateService _certificateService;
         private bool _disposed = false;
 
@@ -68,6 +69,7 @@ namespace ZLGetCert.ViewModels
             GeneratePasswordCommand = new RelayCommand(GenerateStrongPassword);
             CopyPasswordCommand = new RelayCommand(CopyPasswordToClipboard, CanCopyPassword);
             ToggleSecurityWarningCommand = new RelayCommand(ToggleSecurityWarning);
+            ToggleFqdnEditModeCommand = new RelayCommand(ToggleFqdnEditMode);
 
             // Add default SANs
             AddDnsSan();
@@ -101,6 +103,68 @@ namespace ZLGetCert.ViewModels
             {
                 SetProperty(ref _fqdn, value);
                 OnPropertyChanged(nameof(CanGenerate));
+                OnPropertyChanged(nameof(FqdnDisplayText));
+            }
+        }
+
+        /// <summary>
+        /// Whether FQDN is manually edited (not auto-generated)
+        /// </summary>
+        public bool IsFqdnManuallyEdited
+        {
+            get => _isFqdnManuallyEdited;
+            set
+            {
+                if (SetProperty(ref _isFqdnManuallyEdited, value))
+                {
+                    OnPropertyChanged(nameof(IsFqdnReadOnly));
+                    OnPropertyChanged(nameof(FqdnDisplayText));
+                    OnPropertyChanged(nameof(FqdnEditButtonText));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether FQDN field is read-only (not in edit mode)
+        /// </summary>
+        public bool IsFqdnReadOnly => !IsFqdnManuallyEdited;
+
+        /// <summary>
+        /// Display text showing if FQDN is auto-generated or manually edited
+        /// </summary>
+        public string FqdnDisplayText
+        {
+            get
+            {
+                if (IsFqdnManuallyEdited)
+                    return "✏️ (manually edited)";
+                return "⚡ (auto-generated)";
+            }
+        }
+
+        /// <summary>
+        /// Button text for FQDN edit toggle
+        /// </summary>
+        public string FqdnEditButtonText => IsFqdnManuallyEdited ? "Auto" : "Edit";
+
+        /// <summary>
+        /// Tooltip for FQDN field
+        /// </summary>
+        public string FqdnTooltip
+        {
+            get
+            {
+                if (IsFqdnManuallyEdited)
+                {
+                    return "FQDN is manually edited. Click 'Auto' to restore automatic generation from hostname + organization.";
+                }
+                
+                if (IsWildcard)
+                {
+                    return $"Automatically generated wildcard FQDN:\n  *.{Company}\n\nClick 'Edit' to manually override if needed.";
+                }
+                
+                return $"Automatically generated from:\n  Hostname ({HostName}) + Organization ({Company})\n  = {FQDN}\n\nClick 'Edit' to manually override if needed.";
             }
         }
 
@@ -741,6 +805,11 @@ namespace ZLGetCert.ViewModels
         public ICommand ToggleSecurityWarningCommand { get; }
 
         /// <summary>
+        /// Toggle FQDN edit mode command
+        /// </summary>
+        public ICommand ToggleFqdnEditModeCommand { get; }
+
+        /// <summary>
         /// Whether the CSR import workflow is active
         /// </summary>
         public bool IsCSRWorkflow => !string.IsNullOrWhiteSpace(CsrFilePath);
@@ -891,9 +960,14 @@ namespace ZLGetCert.ViewModels
 
         /// <summary>
         /// Update FQDN based on hostname and company
+        /// Only updates if not in manual edit mode
         /// </summary>
         private void UpdateFQDN()
         {
+            // Don't auto-update if user has manually edited the FQDN
+            if (IsFqdnManuallyEdited)
+                return;
+
             if (IsWildcard)
             {
                 FQDN = $"*.{Company}";
@@ -902,6 +976,9 @@ namespace ZLGetCert.ViewModels
             {
                 FQDN = $"{HostName}.{Company}";
             }
+
+            // Update tooltip when FQDN changes
+            OnPropertyChanged(nameof(FqdnTooltip));
         }
 
         /// <summary>
@@ -1099,6 +1176,26 @@ namespace ZLGetCert.ViewModels
         {
             SecurityWarningExpanded = !SecurityWarningExpanded;
             OnPropertyChanged(nameof(SecurityWarningIndicator));
+        }
+
+        /// <summary>
+        /// Toggle FQDN edit mode (manual vs auto-generated)
+        /// </summary>
+        private void ToggleFqdnEditMode()
+        {
+            if (IsFqdnManuallyEdited)
+            {
+                // Switching back to auto mode - regenerate FQDN
+                IsFqdnManuallyEdited = false;
+                UpdateFQDN();
+            }
+            else
+            {
+                // Switching to manual mode - keep current value but allow editing
+                IsFqdnManuallyEdited = true;
+            }
+            
+            OnPropertyChanged(nameof(FqdnTooltip));
         }
 
         /// <summary>
