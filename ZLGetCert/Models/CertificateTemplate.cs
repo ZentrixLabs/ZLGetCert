@@ -12,6 +12,7 @@ namespace ZLGetCert.Models
     {
         private string _name;
         private string _displayName;
+        private string _description;
         private string _oid;
         private int _version;
         private CertificateType? _detectedType;
@@ -39,6 +40,26 @@ namespace ZLGetCert.Models
             {
                 _displayName = value;
                 OnPropertyChanged(nameof(DisplayName));
+            }
+        }
+
+        /// <summary>
+        /// Description of what this template is used for
+        /// </summary>
+        public string Description
+        {
+            get
+            {
+                if (!string.IsNullOrEmpty(_description))
+                    return _description;
+                
+                // Auto-generate description based on detected type
+                return GetDescriptionForType(DetectedType);
+            }
+            set
+            {
+                _description = value;
+                OnPropertyChanged(nameof(Description));
             }
         }
 
@@ -213,6 +234,32 @@ namespace ZLGetCert.Models
                 case CertificateType.FromCSR:
                 default:
                     return "0xa0"; // Default
+            }
+        }
+
+        /// <summary>
+        /// Get a user-friendly description for a certificate type
+        /// </summary>
+        public static string GetDescriptionForType(CertificateType type)
+        {
+            switch (type)
+            {
+                case CertificateType.Standard:
+                    return "SSL/TLS certificates for web servers (Apache, IIS, NGINX)";
+                case CertificateType.Wildcard:
+                    return "SSL/TLS for all subdomains (*.example.com)";
+                case CertificateType.CodeSigning:
+                    return "Sign applications, scripts, and executables";
+                case CertificateType.ClientAuth:
+                    return "User/computer authentication (VPN, Wi-Fi, workstations)";
+                case CertificateType.Email:
+                    return "Email encryption and signing (S/MIME)";
+                case CertificateType.Custom:
+                    return "Custom certificate configuration";
+                case CertificateType.FromCSR:
+                    return "Import from existing Certificate Signing Request";
+                default:
+                    return "Certificate template";
             }
         }
 

@@ -154,11 +154,15 @@
     <Compile Include="Utilities\SecureStringHelper.cs" />
     <Compile Include="Utilities\ValidationHelper.cs" />
     <Compile Include="Utilities\VersionHelper.cs" />
+    <Compile Include="Utilities\PasswordBoxHelper.cs" />
     <Compile Include="Enums\CertificateType.cs" />
     <Compile Include="Enums\LogLevel.cs" />
     <Compile Include="Converters\EnumToBoolConverter.cs" />
     <Compile Include="Converters\BoolToVisibilityConverter.cs" />
     <Compile Include="Converters\InverseBoolConverter.cs" />
+    <Compile Include="Converters\PasswordStrengthConverter.cs" />
+    <Compile Include="Converters\PercentageWidthConverter.cs" />
+    <Compile Include="Converters\SecureStringToStringConverter.cs" />
     <Compile Include="Views\ConfigurationEditorView.xaml.cs">
       <DependentUpon>ConfigurationEditorView.xaml</DependentUpon>
     </Compile>

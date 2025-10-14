@@ -400,36 +400,71 @@ namespace ZLGetCert.Services
                     }
 
                     // Look for template lines that contain template information
-                    // Format examples from the image:
+                    // Format examples:
                     // "Auto-Enroll: Access is denied. (CodeSigning_MP_Modern: Code Signing_MP_Modern)"
                     // "Access is denied. (DirectoryEmailReplication: Directory Email Replication)"
-                    if (trimmedLine.Contains("(") && trimmedLine.Contains(":"))
+                    // "CodeSigning_MP_Modern: Code Signing_MP_Modern -- Auto-Enroll: Access is denied."
+                    if (trimmedLine.Contains(":"))
                     {
-                        // Extract template info from parentheses
-                        var startParen = trimmedLine.IndexOf('(');
-                        var endParen = trimmedLine.LastIndexOf(')');
+                        string templateName = null;
+                        string displayName = null;
                         
-                        if (startParen >= 0 && endParen > startParen)
+                        // Try format: "Auto-Enroll: Access is denied. (TemplateName: DisplayName)"
+                        if (trimmedLine.Contains("(") && trimmedLine.Contains(")"))
                         {
-                            var templateInfo = trimmedLine.Substring(startParen + 1, endParen - startParen - 1);
-                            var parts = templateInfo.Split(':');
+                            var startParen = trimmedLine.IndexOf('(');
+                            var endParen = trimmedLine.LastIndexOf(')');
+                            
+                            if (startParen >= 0 && endParen > startParen)
+                            {
+                                var templateInfo = trimmedLine.Substring(startParen + 1, endParen - startParen - 1);
+                                var parts = templateInfo.Split(':');
+                                
+                                if (parts.Length >= 2)
+                                {
+                                    templateName = parts[0].Trim();
+                                    displayName = parts[1].Trim();
+                                }
+                            }
+                        }
+                        // Try format: "TemplateName: DisplayName -- Auto-Enroll: Access is denied."
+                        else if (trimmedLine.Contains(" -- Auto-Enroll:"))
+                        {
+                            var templatePart = trimmedLine.Split(new[] { " -- Auto-Enroll:" }, StringSplitOptions.None)[0];
+                            var parts = templatePart.Split(':');
                             
                             if (parts.Length >= 2)
                             {
-                                var templateName = parts[0].Trim();
-                                var displayName = parts[1].Trim();
-                                
-                                // Only add if this template is NOT entirely access denied
-                                // Auto-enroll denied is OK - we can still manually request
-                                if (!trimmedLine.StartsWith("Access is denied.") && 
-                                    !trimmedLine.EndsWith("-- Access is denied."))
+                                templateName = parts[0].Trim();
+                                displayName = parts[1].Trim();
+                            }
+                        }
+                        // Try format: "TemplateName: DisplayName -- Access is denied."
+                        else if (trimmedLine.Contains(" -- Access is denied."))
+                        {
+                            var templatePart = trimmedLine.Split(new[] { " -- Access is denied." }, StringSplitOptions.None)[0];
+                            var parts = templatePart.Split(':');
+                            
+                            if (parts.Length >= 2)
+                            {
+                                templateName = parts[0].Trim();
+                                displayName = parts[1].Trim();
+                            }
+                        }
+                        
+                        // Add template if we successfully parsed it
+                        if (!string.IsNullOrEmpty(templateName) && !string.IsNullOrEmpty(displayName))
+                        {
+                            // Only add if this template is NOT entirely access denied
+                            // Auto-enroll denied is OK - we can still manually request
+                            if (!trimmedLine.StartsWith("Access is denied.") && 
+                                !trimmedLine.EndsWith("-- Access is denied."))
+                            {
+                                templates.Add(new CertificateTemplate
                                 {
-                                    templates.Add(new CertificateTemplate
-                                    {
-                                        Name = templateName,
-                                        DisplayName = displayName
-                                    });
-                                }
+                                    Name = templateName,
+                                    DisplayName = displayName
+                                });
                             }
                         }
                     }

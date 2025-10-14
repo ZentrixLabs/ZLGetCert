@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Security;
+using System.Security.Cryptography;
+using System.Text;
+using System.Windows;
 using System.Windows.Input;
 using ZLGetCert.Models;
 using ZLGetCert.Enums;
@@ -32,6 +35,7 @@ namespace ZLGetCert.ViewModels
         private SecureString _confirmPassword;
         private bool _showPassword;
         private bool _showConfirmPassword;
+        private bool _securityWarningExpanded;
         private readonly CertificateService _certificateService;
         private bool _disposed = false;
 
@@ -54,12 +58,16 @@ namespace ZLGetCert.ViewModels
             _isWildcard = false;
             _showPassword = false;
             _showConfirmPassword = false;
+            _securityWarningExpanded = false;
 
             // Initialize commands
             BrowseCsrCommand = new RelayCommand(BrowseCsr);
             ImportFromCSRCommand = new RelayCommand(ImportFromCSR);
             TogglePasswordVisibilityCommand = new RelayCommand(TogglePasswordVisibility);
             ToggleConfirmPasswordVisibilityCommand = new RelayCommand(ToggleConfirmPasswordVisibility);
+            GeneratePasswordCommand = new RelayCommand(GenerateStrongPassword);
+            CopyPasswordCommand = new RelayCommand(CopyPasswordToClipboard, CanCopyPassword);
+            ToggleSecurityWarningCommand = new RelayCommand(ToggleSecurityWarning);
 
             // Add default SANs
             AddDnsSan();
@@ -255,6 +263,20 @@ namespace ZLGetCert.ViewModels
         public bool ShowKeySecurityWarning => ExtractPemKey;
 
         /// <summary>
+        /// Whether the security warning details are expanded
+        /// </summary>
+        public bool SecurityWarningExpanded
+        {
+            get => _securityWarningExpanded;
+            set => SetProperty(ref _securityWarningExpanded, value);
+        }
+
+        /// <summary>
+        /// Expand/collapse indicator for security warning
+        /// </summary>
+        public string SecurityWarningIndicator => SecurityWarningExpanded ? "▲" : "▼";
+
+        /// <summary>
         /// Whether to extract CA bundle (intermediate + root certificates)
         /// </summary>
         public bool ExtractCaBundle
@@ -277,7 +299,10 @@ namespace ZLGetCert.ViewModels
                 if (SetProperty(ref _pfxPassword, value))
                 {
                     OnPropertyChanged(nameof(PasswordStrength));
+                    OnPropertyChanged(nameof(PasswordStrengthValue));
+                    OnPropertyChanged(nameof(PasswordValidation));
                     OnPropertyChanged(nameof(CanGenerate));
+                    ((RelayCommand)CopyPasswordCommand).RaiseCanExecuteChanged();
                 }
             }
         }
@@ -403,6 +428,54 @@ namespace ZLGetCert.ViewModels
         }
 
         /// <summary>
+        /// Password strength enum for binding to visual elements
+        /// </summary>
+        public PasswordStrength PasswordStrengthValue
+        {
+            get
+            {
+                if (PfxPassword == null || PfxPassword.Length == 0)
+                    return ZLGetCert.Utilities.PasswordStrength.Empty;
+
+                return SecureStringHelper.ValidatePasswordStrength(PfxPassword);
+            }
+        }
+
+        /// <summary>
+        /// Password requirements text
+        /// </summary>
+        public string PasswordRequirements => "Requirements: 8+ characters with uppercase, lowercase, and numbers";
+
+        /// <summary>
+        /// Password validation status
+        /// </summary>
+        public string PasswordValidation
+        {
+            get
+            {
+                if (PfxPassword == null || PfxPassword.Length == 0)
+                    return "";
+
+                var plainPassword = SecureStringHelper.SecureStringToString(PfxPassword);
+                var issues = new List<string>();
+
+                if (plainPassword.Length < 8)
+                    issues.Add("At least 8 characters");
+                if (!plainPassword.Any(char.IsUpper))
+                    issues.Add("One uppercase letter");
+                if (!plainPassword.Any(char.IsLower))
+                    issues.Add("One lowercase letter");
+                if (!plainPassword.Any(char.IsDigit))
+                    issues.Add("One number");
+
+                if (issues.Any())
+                    return "Missing: " + string.Join(", ", issues);
+
+                return "✓ All requirements met";
+            }
+        }
+
+        /// <summary>
         /// Whether the form can generate a certificate
         /// </summary>
         public bool CanGenerate
@@ -466,6 +539,21 @@ namespace ZLGetCert.ViewModels
         /// Toggle confirm password visibility command
         /// </summary>
         public ICommand ToggleConfirmPasswordVisibilityCommand { get; }
+
+        /// <summary>
+        /// Generate strong password command
+        /// </summary>
+        public ICommand GeneratePasswordCommand { get; }
+
+        /// <summary>
+        /// Copy password to clipboard command
+        /// </summary>
+        public ICommand CopyPasswordCommand { get; }
+
+        /// <summary>
+        /// Toggle security warning expand/collapse command
+        /// </summary>
+        public ICommand ToggleSecurityWarningCommand { get; }
 
         /// <summary>
         /// Whether the CSR import workflow is active
@@ -698,6 +786,134 @@ namespace ZLGetCert.ViewModels
         private void ToggleConfirmPasswordVisibility()
         {
             ShowConfirmPassword = !ShowConfirmPassword;
+        }
+
+        /// <summary>
+        /// Generate a strong password
+        /// </summary>
+        private void GenerateStrongPassword()
+        {
+            try
+            {
+                const int passwordLength = 16;
+                const string upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                const string lowerCase = "abcdefghijklmnopqrstuvwxyz";
+                const string digits = "0123456789";
+                const string special = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+                const string allChars = upperCase + lowerCase + digits + special;
+
+                using (var rng = RandomNumberGenerator.Create())
+                {
+                    var password = new StringBuilder();
+                    
+                    // Ensure at least one character from each category
+                    password.Append(GetRandomChar(upperCase, rng));
+                    password.Append(GetRandomChar(lowerCase, rng));
+                    password.Append(GetRandomChar(digits, rng));
+                    password.Append(GetRandomChar(special, rng));
+
+                    // Fill the rest with random characters
+                    for (int i = 4; i < passwordLength; i++)
+                    {
+                        password.Append(GetRandomChar(allChars, rng));
+                    }
+
+                    // Shuffle the password
+                    var passwordChars = password.ToString().ToCharArray();
+                    for (int i = passwordChars.Length - 1; i > 0; i--)
+                    {
+                        int j = GetRandomInt(rng, i + 1);
+                        var temp = passwordChars[i];
+                        passwordChars[i] = passwordChars[j];
+                        passwordChars[j] = temp;
+                    }
+
+                    var generatedPassword = new string(passwordChars);
+
+                    // Set the password
+                    PfxPassword = SecureStringHelper.StringToSecureString(generatedPassword);
+                    ConfirmPassword = SecureStringHelper.StringToSecureString(generatedPassword);
+
+                    // Show password briefly to allow user to see it
+                    ShowPassword = true;
+                    ShowConfirmPassword = true;
+
+                    OnPropertyChanged(nameof(PasswordStrength));
+                    OnPropertyChanged(nameof(PasswordStrengthValue));
+                    OnPropertyChanged(nameof(PasswordValidation));
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error generating password: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Get random character from string
+        /// </summary>
+        private char GetRandomChar(string chars, RandomNumberGenerator rng)
+        {
+            int index = GetRandomInt(rng, chars.Length);
+            return chars[index];
+        }
+
+        /// <summary>
+        /// Get random integer using cryptographic RNG
+        /// </summary>
+        private int GetRandomInt(RandomNumberGenerator rng, int max)
+        {
+            var bytes = new byte[4];
+            rng.GetBytes(bytes);
+            uint value = BitConverter.ToUInt32(bytes, 0);
+            return (int)(value % (uint)max);
+        }
+
+        /// <summary>
+        /// Copy password to clipboard
+        /// </summary>
+        private void CopyPasswordToClipboard()
+        {
+            try
+            {
+                if (PfxPassword != null && PfxPassword.Length > 0)
+                {
+                    var plainPassword = SecureStringHelper.SecureStringToString(PfxPassword);
+                    Clipboard.SetText(plainPassword);
+                    
+                    MessageBox.Show(
+                        "Password copied to clipboard!\n\n" +
+                        "⚠️ Security Notice: The password is now in your clipboard.\n" +
+                        "Please paste it into your password manager immediately\n" +
+                        "and clear your clipboard afterwards.",
+                        "Password Copied",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error copying password: {ex.Message}", "Error", 
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Check if password can be copied
+        /// </summary>
+        private bool CanCopyPassword()
+        {
+            return PfxPassword != null && PfxPassword.Length > 0;
+        }
+
+        /// <summary>
+        /// Toggle security warning expansion
+        /// </summary>
+        private void ToggleSecurityWarning()
+        {
+            SecurityWarningExpanded = !SecurityWarningExpanded;
+            OnPropertyChanged(nameof(SecurityWarningIndicator));
         }
 
         /// <summary>

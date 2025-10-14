@@ -13,6 +13,11 @@
             <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" xmlns:converters="clr-namespace:ZLGetCert.Converters"/>
             <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" xmlns:converters="clr-namespace:ZLGetCert.Converters"/>
             <converters:InverseBoolConverter x:Key="InverseBoolConverter" xmlns:converters="clr-namespace:ZLGetCert.Converters"/>
+            <converters:PasswordStrengthToValueConverter x:Key="PasswordStrengthToValueConverter" xmlns:converters="clr-namespace:ZLGetCert.Converters"/>
+            <converters:PasswordStrengthToColorConverter x:Key="PasswordStrengthToColorConverter" xmlns:converters="clr-namespace:ZLGetCert.Converters"/>
+            <converters:PasswordStrengthToTextConverter x:Key="PasswordStrengthToTextConverter" xmlns:converters="clr-namespace:ZLGetCert.Converters"/>
+            <converters:PercentageWidthConverter x:Key="PercentageWidthConverter" xmlns:converters="clr-namespace:ZLGetCert.Converters"/>
+            <converters:SecureStringToStringConverter x:Key="SecureStringToStringConverter" xmlns:converters="clr-namespace:ZLGetCert.Converters"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

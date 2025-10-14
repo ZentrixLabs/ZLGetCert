@@ -50,6 +50,7 @@ namespace ZLGetCert.ViewModels
             OpenConfigurationEditorCommand = new RelayCommand(OpenConfigurationEditor);
             OpenUsersGuideCommand = new RelayCommand(OpenUsersGuide);
             SaveAsDefaultsCommand = new RelayCommand(SaveAsDefaults);
+            ShowTemplateHelpCommand = new RelayCommand(ShowTemplateHelp);
 
             // Initialize properties
             _statusMessage = "Ready to generate certificate";
@@ -166,6 +167,11 @@ namespace ZLGetCert.ViewModels
         /// Save current settings as defaults command
         /// </summary>
         public ICommand SaveAsDefaultsCommand { get; }
+
+        /// <summary>
+        /// Show template selection help command
+        /// </summary>
+        public ICommand ShowTemplateHelpCommand { get; }
 
         /// <summary>
         /// Load configuration and update UI
@@ -399,6 +405,43 @@ namespace ZLGetCert.ViewModels
                 StatusMessage = $"Failed to save defaults: {ex.Message}";
                 _logger.LogError(ex, "Failed to save default certificate settings");
             }
+        }
+
+        /// <summary>
+        /// Show template selection help dialog
+        /// </summary>
+        private void ShowTemplateHelp()
+        {
+            var helpMessage = @"Don't know which certificate template to use?
+
+Choose based on what you need the certificate for:
+
+🔐 Web Servers (SSL/TLS)
+   → Use: WebServer, SSL, TLS, WebServerV2
+   → For: Apache, IIS, NGINX, HAProxy
+   → Secures: HTTPS websites
+
+✍️ Code Signing
+   → Use: CodeSigning, CodeSign
+   → For: Applications, scripts, executables
+   → Purpose: Verify software authenticity
+
+👤 User/Computer Authentication
+   → Use: User, Workstation, Computer
+   → For: VPN access, Wi-Fi, domain computers
+   → Purpose: Verify user/device identity
+
+📧 Email Encryption (S/MIME)
+   → Use: EmailProtection, SMIME
+   → For: Email signing and encryption
+   → Purpose: Secure email communications
+
+💡 Tip: If unsure, start with WebServer for most web applications.";
+
+            System.Windows.MessageBox.Show(helpMessage, 
+                "Certificate Template Help", 
+                System.Windows.MessageBoxButton.OK, 
+                System.Windows.MessageBoxImage.Information);
         }
     }
 

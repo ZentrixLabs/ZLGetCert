@@ -122,6 +122,74 @@
                         </TextBlock>
                     </Grid>
                     
+                    <!-- Action Buttons Card - CSR Import at Top for Quick Access -->
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="Choose Your Workflow" Style="{StaticResource SectionHeaderStyle}"/>
+                            
+                            <!-- Option 1: Import Existing CSR (Quick Path) -->
+                            <StackPanel>
+                                <Button Content="📄 Import &amp; Sign CSR File..." 
+                                        Command="{Binding CertificateRequest.ImportFromCSRCommand}"
+                                        Style="{StaticResource PrimaryButtonStyle}"
+                                        ToolTip="Submit an existing Certificate Signing Request file to the CA (Alt+I)"
+                                        FontSize="14"
+                                        Padding="20,10"
+                                        FontWeight="SemiBold"
+                                        HorizontalAlignment="Stretch"
+                                        Margin="0,0,0,5"/>
+                                <TextBlock Text="Already have a .csr file? Click here to skip the form below" 
+                                           FontSize="11"
+                                           Foreground="#666666"
+                                           Margin="5,0,0,0"/>
+                            </StackPanel>
+                            
+                            <!-- Separator with OR -->
+                            <Border BorderBrush="#E0E0E0" 
+                                    BorderThickness="0,1,0,0" 
+                                    Margin="0,15,0,15">
+                                <TextBlock Text="OR" 
+                                           HorizontalAlignment="Center"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="#999999"
+                                           Background="White"
+                                           Padding="10,0"
+                                           Margin="0,-10,0,0"/>
+                            </Border>
+                            
+                            <!-- Option 2: Generate New Certificate (Form Required) -->
+                            <StackPanel>
+                                <TextBlock Text="Create a new certificate from scratch:" 
+                                           FontSize="12"
+                                           Foreground="#333333"
+                                           FontWeight="SemiBold"
+                                           Margin="0,0,0,8"/>
+                                <TextBlock Text="1. Fill out the form below with certificate details" 
+                                           FontSize="11"
+                                           Foreground="#666666"
+                                           Margin="5,0,0,3"/>
+                                <TextBlock Text="2. Click the Generate button at the bottom when ready" 
+                                           FontSize="11"
+                                           Foreground="#666666"
+                                           Margin="5,0,0,0"/>
+                            </StackPanel>
+                            
+                            <!-- Additional Actions -->
+                            <Border BorderBrush="#E0E0E0" 
+                                    BorderThickness="0,1,0,0" 
+                                    Margin="0,15,0,10"/>
+                            
+                            <Button Content="💾 Save as Defaults" 
+                                    Command="{Binding SaveAsDefaultsCommand}"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    ToolTip="Save current CA server, template, and organization settings as defaults (Alt+D)"
+                                    HorizontalAlignment="Left"
+                                    Padding="12,6"
+                                    FontSize="12"/>
+                        </StackPanel>
+                    </Border>
+                    
                     <!-- Certificate Authority Configuration Card -->
                     <Border Style="{StaticResource CardStyle}">
                         <StackPanel>
@@ -145,18 +213,55 @@
                             </StackPanel>
                             
                             <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="Certificate Template *" Style="{StaticResource FieldLabelStyle}"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                    <TextBlock Text="Certificate Template *" Style="{StaticResource FieldLabelStyle}" Margin="0"/>
+                                    <Border Background="#E8F4FD" 
+                                            BorderBrush="#007ACC" 
+                                            BorderThickness="1" 
+                                            CornerRadius="3"
+                                            Margin="8,0,0,0"
+                                            Cursor="Hand"
+                                            ToolTip="Click for template selection help">
+                                        <Button Command="{Binding ShowTemplateHelpCommand}"
+                                                Style="{StaticResource SecondaryButtonStyle}"
+                                                Width="24"
+                                                Height="20"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                Padding="0">
+                                            <TextBlock Text="?" 
+                                                       FontSize="12" 
+                                                       FontWeight="Bold"
+                                                       Foreground="#007ACC"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"/>
+                                        </Button>
+                                    </Border>
+                                </StackPanel>
+                                
                                 <ComboBox ItemsSource="{Binding CertificateRequest.AvailableTemplates}" 
                                           SelectedValue="{Binding CertificateRequest.Template}"
                                           SelectedValuePath="Name"
-                                          DisplayMemberPath="DisplayText"
-                                          IsEditable="True"
-                                          ToolTip="Required: Select the certificate template (determines certificate type and usage). Examples: WebServer for SSL/TLS, CodeSigning for software signing, User for VPN/authentication">
+                                          IsEditable="True">
                                     <ComboBox.Style>
                                         <Style TargetType="ComboBox">
                                             <Setter Property="Foreground" Value="Black"/>
                                         </Style>
                                     </ComboBox.Style>
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="0,4">
+                                                <TextBlock Text="{Binding DisplayText}" 
+                                                           FontWeight="SemiBold"
+                                                           FontSize="12"/>
+                                                <TextBlock Text="{Binding Description}" 
+                                                           FontSize="10" 
+                                                           Foreground="#666666"
+                                                           TextWrapping="Wrap"
+                                                           Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
                                 </ComboBox>
                                 <TextBlock Text="Select from the list or type a custom template name" 
                                            Style="{StaticResource StatusTextStyle}"
@@ -359,24 +464,127 @@
                             
                             <!-- PFX Password -->
                             <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="PFX Password *" Style="{StaticResource FieldLabelStyle}"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                    <TextBlock Text="PFX Password *" Style="{StaticResource FieldLabelStyle}" Margin="0"/>
+                                    <TextBlock Text="ⓘ" 
+                                               FontSize="14" 
+                                               Foreground="#007ACC" 
+                                               Margin="5,0,0,0"
+                                               ToolTip="This password protects the exported PFX certificate file. You'll need this password to import the certificate on other systems."
+                                               Cursor="Help"/>
+                                </StackPanel>
+                                
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBox Grid.Column="0" 
-                                             Text="{Binding CertificateRequest.PfxPassword}"
-                                             Margin="0,0,10,0"
-                                             ToolTip="Required: Strong password to protect the PFX certificate file. Minimum 8 characters with uppercase, lowercase, and numbers."/>
+                                    
+                                    <!-- Password Box (hidden when showing password) -->
+                                    <PasswordBox Grid.Column="0" 
+                                                 x:Name="PfxPasswordBox"
+                                                 util:PasswordBoxHelper.Attach="True"
+                                                 util:PasswordBoxHelper.SecurePassword="{Binding CertificateRequest.PfxPassword, Mode=TwoWay}"
+                                                 Margin="0,0,5,0"
+                                                 Padding="8"
+                                                 FontSize="12"
+                                                 Visibility="{Binding CertificateRequest.ShowPassword, Converter={StaticResource InverseBoolToVisibilityConverter}}"
+                                                 xmlns:util="clr-namespace:ZLGetCert.Utilities"/>
+                                    
+                                    <!-- TextBox (shown when revealing password) -->
+                                    <TextBox Grid.Column="0"
+                                             x:Name="PfxPasswordTextBox"
+                                             Text="{Binding CertificateRequest.PfxPassword, Converter={StaticResource SecureStringToStringConverter}, Mode=TwoWay}"
+                                             Margin="0,0,5,0"
+                                             Padding="8"
+                                             FontSize="12"
+                                             Visibility="{Binding CertificateRequest.ShowPassword, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                    
                                     <Button Grid.Column="1" 
                                             Content="👁" 
                                             Command="{Binding CertificateRequest.TogglePasswordVisibilityCommand}"
                                             Style="{StaticResource IconButtonStyle}"
+                                            Width="32"
+                                            Height="32"
+                                            Margin="0,0,5,0"
                                             ToolTip="Toggle password visibility"/>
+                                    
+                                    <Button Grid.Column="2" 
+                                            Content="📋" 
+                                            Command="{Binding CertificateRequest.CopyPasswordCommand}"
+                                            Style="{StaticResource IconButtonStyle}"
+                                            Width="32"
+                                            Height="32"
+                                            Margin="0,0,5,0"
+                                            ToolTip="Copy password to clipboard"/>
+                                    
+                                    <Button Grid.Column="3" 
+                                            Content="🔑" 
+                                            Command="{Binding CertificateRequest.GeneratePasswordCommand}"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            Padding="8,4"
+                                            ToolTip="Generate strong password"/>
                                 </Grid>
-                                <TextBlock Text="{Binding CertificateRequest.PasswordStrength}" 
-                                           Style="{StaticResource StatusTextStyle}"/>
+                                
+                                <!-- Password Strength Meter -->
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <!-- Strength Bar Background -->
+                                    <Border Grid.Column="0" 
+                                            Background="#E0E0E0" 
+                                            Height="8" 
+                                            CornerRadius="4"
+                                            Margin="0,0,10,0">
+                                        <!-- Strength Bar Fill -->
+                                        <Border Background="{Binding CertificateRequest.PasswordStrengthValue, Converter={StaticResource PasswordStrengthToColorConverter}}"
+                                                Height="8"
+                                                CornerRadius="4"
+                                                HorizontalAlignment="Left">
+                                            <Border.Width>
+                                                <MultiBinding Converter="{StaticResource PercentageWidthConverter}">
+                                                    <Binding Path="ActualWidth" RelativeSource="{RelativeSource AncestorType=Border}"/>
+                                                    <Binding Path="CertificateRequest.PasswordStrengthValue" Converter="{StaticResource PasswordStrengthToValueConverter}"/>
+                                                </MultiBinding>
+                                            </Border.Width>
+                                        </Border>
+                                    </Border>
+                                    
+                                    <!-- Strength Text -->
+                                    <TextBlock Grid.Column="1" 
+                                               Text="{Binding CertificateRequest.PasswordStrengthValue, Converter={StaticResource PasswordStrengthToTextConverter}}"
+                                               Foreground="{Binding CertificateRequest.PasswordStrengthValue, Converter={StaticResource PasswordStrengthToColorConverter}}"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center"
+                                               FontSize="11"/>
+                                </Grid>
+                                
+                                <!-- Password Requirements -->
+                                <TextBlock Text="{Binding CertificateRequest.PasswordRequirements}" 
+                                           FontSize="10"
+                                           Foreground="#666666"
+                                           Margin="0,5,0,0"/>
+                                
+                                <!-- Password Validation Status -->
+                                <TextBlock Text="{Binding CertificateRequest.PasswordValidation}" 
+                                           FontSize="10"
+                                           Margin="0,3,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#DC3545"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding CertificateRequest.PasswordValidation}" Value="✓ All requirements met">
+                                                    <Setter Property="Foreground" Value="#28A745"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </StackPanel>
 
                             <!-- Confirm Password -->
@@ -387,14 +595,33 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBox Grid.Column="0" 
-                                             Text="{Binding CertificateRequest.ConfirmPassword}"
+                                    
+                                    <!-- Password Box (hidden when showing password) -->
+                                    <PasswordBox Grid.Column="0" 
+                                                 x:Name="ConfirmPasswordBox"
+                                                 util:PasswordBoxHelper.Attach="True"
+                                                 util:PasswordBoxHelper.SecurePassword="{Binding CertificateRequest.ConfirmPassword, Mode=TwoWay}"
+                                                 Margin="0,0,10,0"
+                                                 Padding="8"
+                                                 FontSize="12"
+                                                 Visibility="{Binding CertificateRequest.ShowConfirmPassword, Converter={StaticResource InverseBoolToVisibilityConverter}}"
+                                                 xmlns:util="clr-namespace:ZLGetCert.Utilities"/>
+                                    
+                                    <!-- TextBox (shown when revealing password) -->
+                                    <TextBox Grid.Column="0"
+                                             x:Name="ConfirmPasswordTextBox"
+                                             Text="{Binding CertificateRequest.ConfirmPassword, Converter={StaticResource SecureStringToStringConverter}, Mode=TwoWay}"
                                              Margin="0,0,10,0"
-                                             ToolTip="Required: Re-enter your password to confirm it matches"/>
+                                             Padding="8"
+                                             FontSize="12"
+                                             Visibility="{Binding CertificateRequest.ShowConfirmPassword, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                    
                                     <Button Grid.Column="1" 
                                             Content="👁" 
                                             Command="{Binding CertificateRequest.ToggleConfirmPasswordVisibilityCommand}"
                                             Style="{StaticResource IconButtonStyle}"
+                                            Width="32"
+                                            Height="32"
                                             ToolTip="Toggle password visibility"/>
                                 </Grid>
                             </StackPanel>
@@ -405,41 +632,76 @@
                                           IsChecked="{Binding CertificateRequest.ExtractPemKey}"
                                           ToolTip="Export certificate and private key in PEM format. Required for Apache, NGINX, HAProxy and other web servers. Built-in .NET export - no OpenSSL needed."/>
                                 
-                                <!-- Security Warning for Unencrypted Keys -->
-                                <Border Background="#FFF3CD" 
-                                        BorderBrush="#FFC107" 
-                                        BorderThickness="1" 
-                                        Padding="10"
-                                        Margin="0,10,0,10"
-                                        Visibility="{Binding CertificateRequest.ShowKeySecurityWarning, Converter={StaticResource BoolToVisibilityConverter}}">
-                                    <StackPanel>
-                                        <TextBlock Text="⚠️ SECURITY NOTICE" 
-                                                   FontWeight="Bold" 
-                                                   Foreground="#856404"
-                                                   Margin="0,0,0,5"/>
-                                        <TextBlock TextWrapping="Wrap" Foreground="#856404" FontSize="11">
-                                            <Run Text="The .key file will be UNENCRYPTED (required by web servers)."/>
-                                            <LineBreak/>
-                                            <LineBreak/>
-                                            <Run Text="Security protections applied:"/>
-                                            <LineBreak/>
-                                            <Run Text="✓ File permissions set to owner-only automatically"/>
-                                            <LineBreak/>
-                                            <Run Text="✓ All exports logged to audit trail"/>
-                                            <LineBreak/>
-                                            <LineBreak/>
-                                            <Run Text="Your responsibilities:"/>
-                                            <LineBreak/>
-                                            <Run Text="• Copy to server using encrypted transfer (SFTP/SCP)"/>
-                                            <LineBreak/>
-                                            <Run Text="• Verify file permissions on destination (chmod 600)"/>
-                                            <LineBreak/>
-                                            <Run Text="• Securely delete local copy after deployment"/>
-                                            <LineBreak/>
-                                            <Run Text="• NEVER store in cloud storage or version control"/>
-                                        </TextBlock>
-                                    </StackPanel>
-                                </Border>
+                                <!-- Collapsible Security Warning for Unencrypted Keys -->
+                                <StackPanel Visibility="{Binding CertificateRequest.ShowKeySecurityWarning, Converter={StaticResource BoolToVisibilityConverter}}"
+                                           Margin="0,8,0,0">
+                                    <!-- Compact Warning Header (Always Visible) -->
+                                    <Button Command="{Binding CertificateRequest.ToggleSecurityWarningCommand}"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            HorizontalAlignment="Left"
+                                            HorizontalContentAlignment="Left"
+                                            Padding="8,6"
+                                            Background="#FFF3CD"
+                                            BorderBrush="#FFC107"
+                                            Margin="0,0,0,5">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="⚠️" FontSize="12" Margin="0,0,5,0"/>
+                                            <TextBlock Text="Unencrypted key file - Click for security info" 
+                                                       FontSize="11" 
+                                                       Foreground="#856404"
+                                                       FontWeight="SemiBold"
+                                                       Margin="0,0,8,0"/>
+                                            <TextBlock Text="{Binding CertificateRequest.SecurityWarningIndicator}" 
+                                                       FontSize="11" 
+                                                       Foreground="#856404"
+                                                       FontWeight="Bold"/>
+                                        </StackPanel>
+                                    </Button>
+                                    
+                                    <!-- Expanded Warning Details (Collapsible) -->
+                                    <Border Background="#FFF3CD" 
+                                            BorderBrush="#FFC107" 
+                                            BorderThickness="1" 
+                                            Padding="12"
+                                            Visibility="{Binding CertificateRequest.SecurityWarningExpanded, Converter={StaticResource BoolToVisibilityConverter}}">
+                                        <StackPanel>
+                                            <TextBlock Text="SECURITY NOTICE" 
+                                                       FontWeight="Bold" 
+                                                       Foreground="#856404"
+                                                       FontSize="11"
+                                                       Margin="0,0,0,8"/>
+                                            <TextBlock TextWrapping="Wrap" Foreground="#856404" FontSize="10" Margin="0,0,0,8">
+                                                <Run Text="The .key file will be UNENCRYPTED (required by web servers)."/>
+                                            </TextBlock>
+                                            
+                                            <TextBlock Text="Security protections applied:" 
+                                                       FontWeight="SemiBold" 
+                                                       Foreground="#856404" 
+                                                       FontSize="10"
+                                                       Margin="0,0,0,3"/>
+                                            <TextBlock TextWrapping="Wrap" Foreground="#856404" FontSize="10" Margin="0,0,0,8">
+                                                <Run Text="✓ File permissions set to owner-only automatically"/>
+                                                <LineBreak/>
+                                                <Run Text="✓ All exports logged to audit trail"/>
+                                            </TextBlock>
+                                            
+                                            <TextBlock Text="Your responsibilities:" 
+                                                       FontWeight="SemiBold" 
+                                                       Foreground="#856404" 
+                                                       FontSize="10"
+                                                       Margin="0,0,0,3"/>
+                                            <TextBlock TextWrapping="Wrap" Foreground="#856404" FontSize="10">
+                                                <Run Text="• Copy to server using encrypted transfer (SFTP/SCP)"/>
+                                                <LineBreak/>
+                                                <Run Text="• Verify file permissions on destination (chmod 600)"/>
+                                                <LineBreak/>
+                                                <Run Text="• Securely delete local copy after deployment"/>
+                                                <LineBreak/>
+                                                <Run Text="• NEVER store in cloud storage or version control"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
                                 
                                 <CheckBox Content="Extract CA bundle (intermediate + root certificates)" 
                                           IsChecked="{Binding CertificateRequest.ExtractCaBundle}"
@@ -452,30 +714,38 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
-
-                    <!-- Action Buttons Card -->
-                    <Border Style="{StaticResource CardStyle}">
+                    
+                    <!-- Generate Certificate Button - Bottom of Form -->
+                    <Border Style="{StaticResource CardStyle}" Background="#F8F9FA">
                         <StackPanel>
-                            <TextBlock Text="Actions" Style="{StaticResource SectionHeaderStyle}"/>
-                            <StackPanel Orientation="Horizontal">
-                                <Button Content="🔧 Generate Certificate" 
-                                        Command="{Binding GenerateCertificateCommand}"
-                                        Style="{StaticResource PrimaryButtonStyle}"
-                                        Margin="0,0,10,0"
-                                        ToolTip="Generate the certificate with the settings above (Alt+G)"
-                                        FontSize="14"
-                                        Padding="20,10"
-                                        FontWeight="SemiBold"/>
-                                <Button Content="📄 Import from CSR File..." 
-                                        Command="{Binding CertificateRequest.ImportFromCSRCommand}"
-                                        Style="{StaticResource SecondaryButtonStyle}"
-                                        ToolTip="Submit an existing Certificate Signing Request file to the CA (Alt+I)"
-                                        Margin="0,0,10,0"/>
-                                <Button Content="💾 Save as Defaults" 
-                                        Command="{Binding SaveAsDefaultsCommand}"
-                                        Style="{StaticResource SecondaryButtonStyle}"
-                                        ToolTip="Save current CA server, template, and organization settings as defaults (Alt+D)"/>
-                            </StackPanel>
+                            <TextBlock Text="Ready to Generate?" 
+                                       Style="{StaticResource SectionHeaderStyle}"
+                                       Foreground="#28A745"/>
+                            
+                            <Button Content="🔧 Generate Certificate" 
+                                    Command="{Binding GenerateCertificateCommand}"
+                                    IsEnabled="{Binding CertificateRequest.CanGenerate}"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    ToolTip="Generate the certificate with the settings above (Alt+G)"
+                                    FontSize="16"
+                                    Padding="24,12"
+                                    FontWeight="Bold"
+                                    HorizontalAlignment="Stretch"
+                                    Margin="0,5,0,5"/>
+                            
+                            <TextBlock FontSize="11" Foreground="#666666" HorizontalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="Fill out all required fields (*) above to enable this button"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding CertificateRequest.CanGenerate}" Value="True">
+                                                <Setter Property="Text" Value="✓ All required fields complete - click to generate your certificate"/>
+                                                <Setter Property="Foreground" Value="#28A745"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </StackPanel>
                     </Border>
                 </StackPanel>
