@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Text.RegularExpressions;
 using ZLGetCert.Models;
 using ZLGetCert.Enums;
 
@@ -28,6 +29,169 @@ namespace ZLGetCert.Services
             _logger = LoggingService.Instance;
             _configService = ConfigurationService.Instance;
             _openSSLService = OpenSSLService.Instance;
+        }
+
+        /// <summary>
+        /// Get available certificate templates from the CA
+        /// </summary>
+        public List<CertificateTemplate> GetAvailableTemplates(string caServer = null)
+        {
+            var templates = new List<CertificateTemplate>();
+
+            try
+            {
+                var config = _configService.GetConfiguration();
+                var server = caServer ?? config.CertificateAuthority.Server;
+
+                if (string.IsNullOrEmpty(server))
+                {
+                    _logger.LogWarning("No CA server configured");
+                    return templates;
+                }
+
+                var caConfig = $"{server}\\{server.Split('.')[0].ToUpper()}";
+                
+                _logger.LogInfo("Querying available templates from CA: {0}", caConfig);
+
+                var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "certutil.exe",
+                        Arguments = $"-CATemplates -config \"{caConfig}\"",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true
+                    }
+                };
+
+                process.Start();
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                process.WaitForExit(30000); // 30 second timeout
+
+                if (process.ExitCode != 0)
+                {
+                    _logger.LogError("Failed to query templates: {0}", error);
+                    return templates;
+                }
+
+                // Parse the output
+                templates = ParseTemplateOutput(output);
+                
+                _logger.LogInfo("Found {0} available templates", templates.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error querying certificate templates");
+            }
+
+            return templates;
+        }
+
+        /// <summary>
+        /// Parse certutil template output
+        /// </summary>
+        private List<CertificateTemplate> ParseTemplateOutput(string output)
+        {
+            var templates = new List<CertificateTemplate>();
+
+            try
+            {
+                // Split output into lines
+                var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                
+                CertificateTemplate currentTemplate = null;
+
+                foreach (var line in lines)
+                {
+                    var trimmedLine = line.Trim();
+
+                    // Skip empty lines and separator lines
+                    if (string.IsNullOrWhiteSpace(trimmedLine) || trimmedLine.StartsWith("---"))
+                        continue;
+
+                    // Check for template name (usually starts at the beginning of a line)
+                    // Format is typically: TemplateName -- DisplayName
+                    if (!trimmedLine.StartsWith(" ") && trimmedLine.Contains("--"))
+                    {
+                        if (currentTemplate != null)
+                        {
+                            templates.Add(currentTemplate);
+                        }
+
+                        var parts = trimmedLine.Split(new[] { "--" }, StringSplitOptions.None);
+                        currentTemplate = new CertificateTemplate
+                        {
+                            Name = parts[0].Trim(),
+                            DisplayName = parts.Length > 1 ? parts[1].Trim() : parts[0].Trim()
+                        };
+                    }
+                    // Alternative format: just template name
+                    else if (!trimmedLine.StartsWith(" ") && currentTemplate == null)
+                    {
+                        currentTemplate = new CertificateTemplate
+                        {
+                            Name = trimmedLine,
+                            DisplayName = trimmedLine
+                        };
+                    }
+                    // Check for OID
+                    else if (trimmedLine.StartsWith("Template OID:") || trimmedLine.Contains("OID ="))
+                    {
+                        var match = Regex.Match(trimmedLine, @"(\d+\.)+\d+");
+                        if (match.Success && currentTemplate != null)
+                        {
+                            currentTemplate.OID = match.Value;
+                        }
+                    }
+                    // Check for version
+                    else if (trimmedLine.Contains("Version") && currentTemplate != null)
+                    {
+                        var match = Regex.Match(trimmedLine, @"\d+");
+                        if (match.Success)
+                        {
+                            int.TryParse(match.Value, out int version);
+                            currentTemplate.Version = version;
+                        }
+                    }
+                }
+
+                // Add the last template
+                if (currentTemplate != null)
+                {
+                    templates.Add(currentTemplate);
+                }
+
+                // If the above parsing didn't work, try a simpler approach
+                // Some certutil versions just list template names one per line
+                if (templates.Count == 0)
+                {
+                    foreach (var line in lines)
+                    {
+                        var trimmedLine = line.Trim();
+                        if (!string.IsNullOrWhiteSpace(trimmedLine) && 
+                            !trimmedLine.Contains("===") &&
+                            !trimmedLine.Contains("---") &&
+                            !trimmedLine.StartsWith("Certificate") &&
+                            !trimmedLine.StartsWith("Template"))
+                        {
+                            templates.Add(new CertificateTemplate
+                            {
+                                Name = trimmedLine,
+                                DisplayName = trimmedLine
+                            });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error parsing template output");
+            }
+
+            return templates;
         }
 
         /// <summary>

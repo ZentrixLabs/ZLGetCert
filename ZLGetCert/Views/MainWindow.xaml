@@ -349,8 +349,39 @@
                             </StackPanel>
                             
                             <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="Certificate Template" Style="{StaticResource FieldLabelStyle}"/>
-                                <TextBox Text="{Binding Settings.Configuration.CertificateAuthority.Template}"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="Certificate Template" Style="{StaticResource FieldLabelStyle}"/>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Settings.TemplateLoadStatus}" 
+                                                   Style="{StaticResource StatusTextStyle}"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,10,0"/>
+                                        <Button Content="🔄" 
+                                                Command="{Binding Settings.RefreshTemplatesCommand}"
+                                                ToolTip="Refresh templates from CA"
+                                                Style="{StaticResource IconButtonStyle}"
+                                                IsEnabled="{Binding Settings.IsLoadingTemplates, Converter={StaticResource InverseBoolConverter}}"/>
+                                    </StackPanel>
+                                </Grid>
+                                <ComboBox ItemsSource="{Binding Settings.Configuration.CertificateAuthority.AvailableTemplates}" 
+                                          SelectedValue="{Binding Settings.Configuration.CertificateAuthority.Template}"
+                                          SelectedValuePath="Name"
+                                          DisplayMemberPath="DisplayText"
+                                          IsEditable="True"
+                                          ToolTip="Select a template from the CA or type a custom template name">
+                                    <ComboBox.Style>
+                                        <Style TargetType="ComboBox">
+                                            <Setter Property="Foreground" Value="Black"/>
+                                        </Style>
+                                    </ComboBox.Style>
+                                </ComboBox>
+                                <TextBlock Text="Select from the list or type a custom template name" 
+                                           Style="{StaticResource StatusTextStyle}"
+                                           Margin="0,2,0,0"/>
                             </StackPanel>
                             
                             <StackPanel Style="{StaticResource FormGroupStyle}">

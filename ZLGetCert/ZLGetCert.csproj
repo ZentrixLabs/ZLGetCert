@@ -113,6 +113,7 @@
     <Compile Include="Models\SanEntry.cs" />
     <Compile Include="Models\OpenSSLConfig.cs" />
     <Compile Include="Models\AppConfiguration.cs" />
+    <Compile Include="Models\CertificateTemplate.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\CertificateRequestViewModel.cs" />
     <Compile Include="ViewModels\SettingsViewModel.cs" />

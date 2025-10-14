@@ -106,6 +106,12 @@ namespace ZLGetCert.Models
         private string _template;
         private string _defaultCompany;
         private string _defaultOU;
+        private List<CertificateTemplate> _availableTemplates;
+
+        public CertificateAuthorityConfig()
+        {
+            _availableTemplates = new List<CertificateTemplate>();
+        }
 
         /// <summary>
         /// CA server name
@@ -156,6 +162,19 @@ namespace ZLGetCert.Models
             {
                 _defaultOU = value;
                 OnPropertyChanged(nameof(DefaultOU));
+            }
+        }
+
+        /// <summary>
+        /// Available certificate templates from CA (not persisted to config file)
+        /// </summary>
+        public List<CertificateTemplate> AvailableTemplates
+        {
+            get => _availableTemplates;
+            set
+            {
+                _availableTemplates = value;
+                OnPropertyChanged(nameof(AvailableTemplates));
             }
         }
 
