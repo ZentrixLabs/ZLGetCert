@@ -96,13 +96,14 @@
         </Border>
         
         <!-- Content -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="20">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="20">
             <StackPanel>
                 
                 <!-- Getting Started -->
                 <TextBlock Text="Getting Started" Style="{StaticResource SectionHeaderStyle}"/>
-                <TextBlock Text="ZLGetCert is a Windows application that simplifies certificate requests from on-premises Certificate Authority (CA) without requiring PowerShell or command-line expertise." 
-                           Style="{StaticResource GuideTextStyle}"/>
+                <TextBlock Style="{StaticResource GuideTextStyle}" TextWrapping="Wrap">
+                    ZLGetCert is a Windows application that simplifies certificate requests from on-premises Certificate Authority (CA) without requiring PowerShell or command-line expertise.
+                </TextBlock>
                 
                 <Border Style="{StaticResource InfoBoxStyle}">
                     <StackPanel>
@@ -110,121 +111,204 @@
                         <TextBlock Text="• Windows Server 2016 or later" Style="{StaticResource StepTextStyle}"/>
                         <TextBlock Text="• .NET Framework 4.8" Style="{StaticResource StepTextStyle}"/>
                         <TextBlock Text="• Administrator privileges (for certificate store operations)" Style="{StaticResource StepTextStyle}"/>
-                        <TextBlock Text="• OpenSSL for Windows (optional, for PEM/KEY extraction)" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• No external dependencies - PEM/KEY export built-in!" Style="{StaticResource StepTextStyle}"/>
                     </StackPanel>
                 </Border>
                 
                 <!-- Configuration -->
                 <TextBlock Text="Configuration" Style="{StaticResource SectionHeaderStyle}"/>
-                <TextBlock Text="Before using ZLGetCert, you need to configure your Certificate Authority settings." 
+                <TextBlock Text="ZLGetCert is ready to use out-of-the-box! CA servers are auto-discovered, but you can optionally customize settings." 
                            Style="{StaticResource GuideTextStyle}"/>
                 
                 <TextBlock Text="1. Access Settings" Style="{StaticResource SubSectionHeaderStyle}"/>
-                <TextBlock Text="Click the ⚙️ Settings button in the top-right corner or go to Edit → Settings." 
+                <TextBlock Text="Go to Edit → Settings (Ctrl+,) to open the Settings window." 
                            Style="{StaticResource StepTextStyle}"/>
                 
-                <TextBlock Text="2. Configure CA Settings" Style="{StaticResource SubSectionHeaderStyle}"/>
-                <TextBlock Text="• Server: Enter your CA server hostname or IP address" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="• Template: Specify the certificate template (e.g., WebServer)" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="• Default Company: Set your organization name" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="• Default OU: Set your organizational unit" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="2. Start Generating Certificates" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="• CA servers are automatically discovered from Active Directory - just select from the dropdown!" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Select your certificate template (WebServer, CodeSigning, etc.)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Fill in required fields marked with * - the form adapts based on your template" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Optional: Configure default values in Edit → Settings (Ctrl+,)" Style="{StaticResource StepTextStyle}"/>
                 
                 <TextBlock Text="3. File Paths" Style="{StaticResource SubSectionHeaderStyle}"/>
                 <TextBlock Text="• Certificate Folder: Where certificates will be saved" Style="{StaticResource StepTextStyle}"/>
                 <TextBlock Text="• Log Path: Where application logs are stored" Style="{StaticResource StepTextStyle}"/>
                 
-                <TextBlock Text="4. OpenSSL Integration (Optional)" Style="{StaticResource SubSectionHeaderStyle}"/>
-                <TextBlock Text="• Enable auto-detection or specify the OpenSSL executable path" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="• This allows extraction of PEM and KEY files from PFX certificates" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="4. PEM/KEY Export" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="• Built-in .NET cryptography - no external tools required" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Export PEM and KEY files for Apache, NGINX, HAProxy" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Extract CA certificate chains automatically" Style="{StaticResource StepTextStyle}"/>
                 
-                <!-- Certificate Types -->
-                <TextBlock Text="Certificate Types" Style="{StaticResource SectionHeaderStyle}"/>
-                <TextBlock Text="ZLGetCert supports three types of certificate requests:" 
+                <!-- Certificate Workflows -->
+                <TextBlock Text="Certificate Workflows" Style="{StaticResource SectionHeaderStyle}"/>
+                <TextBlock Text="ZLGetCert uses a template-driven approach that automatically configures certificate types based on your template selection. Fields marked with * are required." 
                            Style="{StaticResource GuideTextStyle}"/>
                 
-                <TextBlock Text="Standard Certificate" Style="{StaticResource SubSectionHeaderStyle}"/>
-                <TextBlock Text="For regular hostname certificates with multiple Subject Alternative Names (SANs)." 
+                <Border Style="{StaticResource InfoBoxStyle}">
+                    <StackPanel>
+                        <TextBlock Text="💡 Template-Driven Design" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                        <TextBlock Text="Simply select your certificate template - the app automatically shows only relevant fields:" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• WebServer template → Shows hostname, SANs, wildcard option" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• CodeSigning template → Shows only organization info (no hostname needed)" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• CSR import → Only CA server, template, and password needed" Style="{StaticResource StepTextStyle}"/>
+                    </StackPanel>
+                </Border>
+                
+                <TextBlock Text="Standard Web Server Certificate" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="For SSL/TLS certificates for web servers (Apache, IIS, NGINX)." 
                            Style="{StaticResource GuideTextStyle}"/>
-                <TextBlock Text="1. Select 'Standard Certificate' radio button" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="2. Enter the primary hostname in the Domain field" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="3. Add additional SANs using the + buttons" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="4. Configure organization information" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="5. Set a secure PFX password" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="6. Click 'Generate Certificate'" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="1. Select CA Server * from the dropdown (or type a custom server)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="2. Select Certificate Template * (e.g., WebServer, WebServerV2)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="3. Enter Hostname * (e.g., www, api, mail - without the domain)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="4. The FQDN is auto-generated (e.g., api.company.com)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="5. Fill in organization details: Location *, State *, Organization *, OU *" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="6. Add additional DNS names or IP addresses as SANs (click ➕ Add)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="7. Set a strong PFX Password * and confirm it" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="8. Optional: Check 'Extract PEM and KEY files' for web servers" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="9. Click 'Generate Certificate' (Alt+G)" Style="{StaticResource StepTextStyle}"/>
                 
                 <TextBlock Text="Wildcard Certificate" Style="{StaticResource SubSectionHeaderStyle}"/>
-                <TextBlock Text="For wildcard domain certificates (*.domain.com)." 
+                <TextBlock Text="For securing multiple subdomains with a single certificate (*.domain.com)." 
                            Style="{StaticResource GuideTextStyle}"/>
-                <TextBlock Text="1. Select 'Wildcard Certificate' radio button" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="2. Enter wildcard domain (e.g., *.example.com)" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="3. Configure location and company details" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="4. Set a secure PFX password" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="1. Select CA Server * and Certificate Template * (must be WebServer type)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="2. Check the 'Wildcard Certificate (*.domain.com)' checkbox" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="3. Hostname field is disabled (not needed for wildcards)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="4. FQDN auto-updates to *.company.com format" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="5. Fill in organization details: Location *, State *, Organization *, OU *" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="6. Set a strong PFX Password * and confirm it" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="7. Click 'Generate Certificate' (Alt+G)" Style="{StaticResource StepTextStyle}"/>
+                
+                <TextBlock Text="Import and Sign CSR File" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="For submitting existing Certificate Signing Request files (from Linux, Java, etc.)." 
+                           Style="{StaticResource GuideTextStyle}"/>
+                <TextBlock Text="1. Click 'Import from CSR File...' button (Alt+I)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="2. Browse to select your .csr file" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="3. The CSR file path is shown with a ✅ confirmation" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="4. Organization and hostname fields are hidden (already in CSR)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="5. Select CA Server * and Certificate Template *" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="6. Set a strong PFX Password * and confirm it" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="7. Click 'Generate Certificate' to submit CSR to CA" Style="{StaticResource StepTextStyle}"/>
+                
+                <TextBlock Text="Code Signing Certificate" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="For signing applications, scripts, and executables." 
+                           Style="{StaticResource GuideTextStyle}"/>
+                <TextBlock Text="1. Select CA Server * and CodeSigning template" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="2. Hostname and wildcard fields are automatically hidden (not applicable)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="3. Fill in organization details: Location *, State *, Organization *, OU *" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="4. Set a strong PFX Password * and confirm it" Style="{StaticResource StepTextStyle}"/>
                 <TextBlock Text="5. Click 'Generate Certificate'" Style="{StaticResource StepTextStyle}"/>
                 
-                <TextBlock Text="From CSR" Style="{StaticResource SubSectionHeaderStyle}"/>
-                <TextBlock Text="For submitting existing Certificate Signing Request files to your CA." 
+                <!-- Understanding Form Fields -->
+                <TextBlock Text="Understanding Form Fields" Style="{StaticResource SectionHeaderStyle}"/>
+                <TextBlock Text="Required fields are marked with * and must be filled before generating a certificate." 
                            Style="{StaticResource GuideTextStyle}"/>
-                <TextBlock Text="1. Select 'From CSR' radio button" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="2. Click 'Browse' to select your CSR file" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="3. Set a secure PFX password" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="4. Click 'Generate Certificate'" Style="{StaticResource StepTextStyle}"/>
+                
+                <TextBlock Text="CA Server * - Your Certificate Authority server name or IP address" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="Certificate Template * - Determines certificate type and usage (e.g., WebServer, CodeSigning)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="Hostname * - Server name without domain (e.g., www, api, mail)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="FQDN - Auto-generated full domain name (e.g., api.company.com)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="Location * - City name (e.g., Seattle, New York, London)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="State * - Two-letter state/province code (e.g., WA, CA, NY, TX)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="Organization * - Your organization's domain name (e.g., company.com)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="Organizational Unit * - Department or division (e.g., IT, Engineering)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="PFX Password * - Strong password to protect the certificate file" Style="{StaticResource StepTextStyle}"/>
+                
+                <Border Style="{StaticResource InfoBoxStyle}">
+                    <StackPanel>
+                        <TextBlock Text="💡 Field Visibility" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                        <TextBlock Text="The form adapts based on your selections:" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• Web server templates show hostname and SAN fields" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• Code signing templates hide hostname fields (not needed)" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• CSR import hides organization fields (already in CSR)" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• Wildcard checkbox only appears for web server templates" Style="{StaticResource StepTextStyle}"/>
+                    </StackPanel>
+                </Border>
+                
+                <!-- Password Requirements -->
+                <TextBlock Text="Password Requirements" Style="{StaticResource SectionHeaderStyle}"/>
+                <TextBlock Text="PFX passwords must meet these requirements:" 
+                           Style="{StaticResource GuideTextStyle}"/>
+                
+                <TextBlock Text="• Minimum 8 characters" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• At least one uppercase letter (A-Z)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• At least one lowercase letter (a-z)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• At least one number (0-9)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Password strength indicator shows Weak/Medium/Strong as you type" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Use the 👁 button to toggle password visibility" Style="{StaticResource StepTextStyle}"/>
                 
                 <!-- Security Settings -->
-                <TextBlock Text="Security Settings" Style="{StaticResource SectionHeaderStyle}"/>
-                <TextBlock Text="Configure security options in the Settings panel:" 
+                <TextBlock Text="Application Settings" Style="{StaticResource SectionHeaderStyle}"/>
+                <TextBlock Text="Configure global options in the Settings window (Edit → Settings or Ctrl+,):" 
                            Style="{StaticResource GuideTextStyle}"/>
                 
-                <TextBlock Text="• Key Length: Choose 2048, 3072, or 4096 bits" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="• Hash Algorithm: Select SHA-256, SHA-384, or SHA-512" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Key Length: Choose 2048, 3072, or 4096 bits (default: 2048)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Hash Algorithm: Select SHA-256, SHA-384, or SHA-512 (default: SHA-256)" Style="{StaticResource StepTextStyle}"/>
                 <TextBlock Text="• Password Confirmation: Require password confirmation for security" Style="{StaticResource StepTextStyle}"/>
                 <TextBlock Text="• Auto-cleanup: Automatically remove temporary files" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="• Remember Password: Store password securely (not recommended for production)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Certificate Folder: Where generated certificates are saved" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Log Path: Location for application logs" Style="{StaticResource StepTextStyle}"/>
                 
-                <!-- Advanced Configuration -->
-                <TextBlock Text="Advanced Configuration" Style="{StaticResource SectionHeaderStyle}"/>
-                <TextBlock Text="For advanced users, you can edit the configuration file directly using the built-in Configuration Editor:" 
+                <!-- PEM/KEY Export for Web Servers -->
+                <TextBlock Text="PEM/KEY Export for Web Servers" Style="{StaticResource SectionHeaderStyle}"/>
+                <TextBlock Text="ZLGetCert includes built-in PEM and KEY file extraction using pure .NET cryptography - no external tools required!" 
                            Style="{StaticResource GuideTextStyle}"/>
                 
-                <TextBlock Text="1. Go to Edit → Configuration Editor..." Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="2. Edit the JSON configuration directly in the editor" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="3. Watch real-time validation feedback as you type" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="4. Fix any validation errors before saving" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="5. Apply changes and restart the application" Style="{StaticResource StepTextStyle}"/>
-                
-                <TextBlock Text="JSON Validator Features" Style="{StaticResource SubSectionHeaderStyle}"/>
-                <TextBlock Text="The Configuration Editor includes a powerful JSON validator:" 
-                           Style="{StaticResource GuideTextStyle}"/>
-                
-                <TextBlock Text="• Real-time validation as you type" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="• Color-coded status indicators:" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="  - ✅ Green: Valid JSON - Ready to save" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="  - ⚠️ Yellow: Configuration issues - JSON valid but has problems" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="  - ❌ Red: Invalid JSON - Syntax errors detected" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="• Detailed error messages with specific validation issues" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="• Safety checks prevent saving invalid configurations" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="• Automatic validation of required fields and data types" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Check 'Extract PEM and KEY files' when generating web server certificates" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• The .pem file contains your certificate (public key)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• The .key file contains your private key (unencrypted, as required by web servers)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Optionally check 'Extract CA bundle' to get intermediate/root certificates" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Compatible with Apache, NGINX, HAProxy, and all web servers" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Works in air-gapped and restricted OT environments" Style="{StaticResource StepTextStyle}"/>
                 
                 <Border Style="{StaticResource WarningBoxStyle}">
                     <StackPanel>
-                        <TextBlock Text="⚠️ Important" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                        <TextBlock Text="• Always backup your configuration before making changes" Style="{StaticResource StepTextStyle}"/>
-                        <TextBlock Text="• Invalid JSON will prevent the application from starting" Style="{StaticResource StepTextStyle}"/>
-                        <TextBlock Text="• Test changes in a development environment first" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="⚠️ Security Notice" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                        <TextBlock Text="The .key file is unencrypted (required by web servers). Security protections:" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• File permissions automatically set to owner-only" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• All exports logged to audit trail" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• Use encrypted transfer methods (SFTP/SCP) to copy to servers" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• Verify permissions on destination (chmod 600)" Style="{StaticResource StepTextStyle}"/>
+                        <TextBlock Text="• Securely delete local copy after deployment" Style="{StaticResource StepTextStyle}"/>
                     </StackPanel>
                 </Border>
+                
+                
+                <!-- Tips and Best Practices -->
+                <TextBlock Text="Tips and Best Practices" Style="{StaticResource SectionHeaderStyle}"/>
+                
+                <TextBlock Text="Using the Form Efficiently" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="• Required fields (marked with *) must be filled before generating" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Hover over any field to see tooltips with examples" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• The Generate Certificate button is prominent and enlarged for easy access" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Use keyboard shortcuts (Alt+G to generate, Alt+I to import CSR)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Click '❓ Click Here for Help' at any time to open this guide" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• The form adapts - only relevant fields are shown based on template selection" Style="{StaticResource StepTextStyle}"/>
+                
+                <TextBlock Text="Template Selection" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="• Choose templates you know - contact your CA administrator if unsure" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• WebServer templates automatically show hostname and SANs fields" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• CodeSigning templates hide hostname (not needed)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• You can type custom template names if not in the dropdown" Style="{StaticResource StepTextStyle}"/>
+                
+                <TextBlock Text="Password Best Practices" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="• Use unique passwords for each certificate" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Watch the strength indicator - aim for 'Strong'" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Store passwords in a password manager" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Use the 👁 button to verify password before confirming" Style="{StaticResource StepTextStyle}"/>
                 
                 <!-- Troubleshooting -->
                 <TextBlock Text="Troubleshooting" Style="{StaticResource SectionHeaderStyle}"/>
                 
                 <TextBlock Text="Common Issues" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="• Cannot click Generate: Check all required (*) fields are filled" Style="{StaticResource StepTextStyle}"/>
                 <TextBlock Text="• Certificate generation fails: Check CA server connectivity and credentials" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="• OpenSSL not detected: Verify installation path in settings" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• PEM/KEY export fails: Ensure write permissions to output folder" Style="{StaticResource StepTextStyle}"/>
                 <TextBlock Text="• Permission errors: Run as Administrator" Style="{StaticResource StepTextStyle}"/>
                 <TextBlock Text="• Invalid configuration: Use Configuration Editor to validate JSON" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="• JSON syntax errors: Use the Configuration Editor's real-time validator" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="• Missing required fields: Check the validation status for specific requirements" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Hostname field disabled: You have wildcard checked (wildcards don't need hostname)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Missing fields: Select a template first - fields appear based on template type" Style="{StaticResource StepTextStyle}"/>
                 
-                <TextBlock Text="Configuration Troubleshooting" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="Configuration Issues" Style="{StaticResource SubSectionHeaderStyle}"/>
                 <TextBlock Text="If you encounter configuration issues:" 
                            Style="{StaticResource GuideTextStyle}"/>
                 
@@ -247,14 +331,30 @@
                 <TextBlock Text="• Review the configuration in appsettings.json" Style="{StaticResource StepTextStyle}"/>
                 <TextBlock Text="• Create an issue in the GitHub repository" Style="{StaticResource StepTextStyle}"/>
                 
+                <!-- Getting Help -->
+                <TextBlock Text="Getting Help" Style="{StaticResource SectionHeaderStyle}"/>
+                <TextBlock Text="ZLGetCert provides multiple ways to get help:" 
+                           Style="{StaticResource GuideTextStyle}"/>
+                
+                <TextBlock Text="• Click '❓ Need Help?' link at the top-right of the form" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Hover over any field to see detailed tooltips with examples" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Press F1 or go to Help → Users Guide" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• All required fields are marked with * asterisks" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Field labels show examples (e.g., 'State: Examples: WA, CA, NY')" Style="{StaticResource StepTextStyle}"/>
+                
                 <!-- Keyboard Shortcuts -->
                 <TextBlock Text="Keyboard Shortcuts" Style="{StaticResource SectionHeaderStyle}"/>
+                
+                <TextBlock Text="Main Window" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="• Alt+G: Generate Certificate (primary action)" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Alt+I: Import from CSR File" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Alt+D: Save current settings as Defaults" Style="{StaticResource StepTextStyle}"/>
                 <TextBlock Text="• Ctrl+N: New Certificate (clear form)" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="• Ctrl+E: Open Settings" Style="{StaticResource StepTextStyle}"/>
-                <TextBlock Text="• F1: Open Users Guide" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• Ctrl+,: Open Settings panel" Style="{StaticResource StepTextStyle}"/>
+                <TextBlock Text="• F1: Open this Users Guide" Style="{StaticResource StepTextStyle}"/>
                 <TextBlock Text="• Alt+F4: Exit application" Style="{StaticResource StepTextStyle}"/>
                 
-                <TextBlock Text="Configuration Editor Shortcuts" Style="{StaticResource SubSectionHeaderStyle}"/>
+                <TextBlock Text="Configuration Editor" Style="{StaticResource SubSectionHeaderStyle}"/>
                 <TextBlock Text="• Ctrl+S: Save configuration to file" Style="{StaticResource StepTextStyle}"/>
                 <TextBlock Text="• Ctrl+O: Load configuration from file" Style="{StaticResource StepTextStyle}"/>
                 <TextBlock Text="• Ctrl+Z: Undo changes (if supported by editor)" Style="{StaticResource StepTextStyle}"/>

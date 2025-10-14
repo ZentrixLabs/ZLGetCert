@@ -26,7 +26,6 @@ namespace ZLGetCert.ViewModels
         private CertificateInfo _currentCertificate;
         private bool _isGenerating;
         private string _statusMessage;
-        private bool _showSettings;
 
         public MainViewModel()
         {
@@ -43,7 +42,6 @@ namespace ZLGetCert.ViewModels
             // Initialize commands
             GenerateCertificateCommand = new RelayCommand(GenerateCertificate, CanGenerateCertificate);
             ShowSettingsCommand = new RelayCommand(ShowSettingsPanel);
-            HideSettingsCommand = new RelayCommand(HideSettings);
             ClearFormCommand = new RelayCommand(ClearForm);
             AddDnsSanCommand = new RelayCommand(AddDnsSan);
             AddIpSanCommand = new RelayCommand(AddIpSan);
@@ -56,7 +54,6 @@ namespace ZLGetCert.ViewModels
             // Initialize properties
             _statusMessage = "Ready to generate certificate";
             _isGenerating = false;
-            _showSettings = false;
 
             // Load configuration
             LoadConfiguration();
@@ -113,14 +110,6 @@ namespace ZLGetCert.ViewModels
             set => SetProperty(ref _statusMessage, value);
         }
 
-        /// <summary>
-        /// Whether to show settings panel
-        /// </summary>
-        public bool ShowSettings
-        {
-            get => _showSettings;
-            set => SetProperty(ref _showSettings, value);
-        }
 
         /// <summary>
         /// PEM/KEY export availability status (now always available using pure .NET)
@@ -137,10 +126,6 @@ namespace ZLGetCert.ViewModels
         /// </summary>
         public ICommand ShowSettingsCommand { get; }
 
-        /// <summary>
-        /// Hide settings command
-        /// </summary>
-        public ICommand HideSettingsCommand { get; }
 
         /// <summary>
         /// Clear form command
@@ -283,19 +268,23 @@ namespace ZLGetCert.ViewModels
         }
 
         /// <summary>
-        /// Toggle settings panel
+        /// Open settings window
         /// </summary>
         private void ShowSettingsPanel()
         {
-            ShowSettings = !ShowSettings;
-        }
-
-        /// <summary>
-        /// Hide settings panel
-        /// </summary>
-        private void HideSettings()
-        {
-            ShowSettings = false;
+            try
+            {
+                var settingsWindow = new Views.SettingsWindow();
+                settingsWindow.DataContext = Settings;
+                settingsWindow.Owner = System.Windows.Application.Current.MainWindow;
+                settingsWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error opening settings window");
+                System.Windows.MessageBox.Show($"Error opening settings: {ex.Message}", 
+                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
         }
 
         /// <summary>

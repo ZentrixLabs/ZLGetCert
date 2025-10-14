@@ -50,17 +50,33 @@
         <!-- Menu Bar -->
         <Menu Grid.Row="0" Background="#F8F9FA" BorderBrush="#E9ECEF" BorderThickness="0,0,0,1">
             <MenuItem Header="_File">
-                <MenuItem Header="_New Certificate" Command="{Binding ClearFormCommand}"/>
+                <MenuItem Header="_New Certificate" 
+                          Command="{Binding ClearFormCommand}"
+                          ToolTip="Clear the form and start a new certificate request (Ctrl+N)"
+                          InputGestureText="Ctrl+N"/>
                 <Separator/>
-                <MenuItem Header="E_xit" Click="Exit_Click"/>
+                <MenuItem Header="E_xit" 
+                          Click="Exit_Click"
+                          ToolTip="Exit the application (Alt+F4)"
+                          InputGestureText="Alt+F4"/>
             </MenuItem>
             <MenuItem Header="_Edit">
-                <MenuItem Header="_Settings" Command="{Binding ShowSettingsCommand}"/>
-                <MenuItem Header="_Configuration Editor..." Command="{Binding OpenConfigurationEditorCommand}"/>
+                <MenuItem Header="_Settings" 
+                          Command="{Binding ShowSettingsCommand}"
+                          ToolTip="Open application settings panel (Ctrl+,)"
+                          InputGestureText="Ctrl+,"/>
+                <MenuItem Header="_Configuration Editor..." 
+                          Command="{Binding OpenConfigurationEditorCommand}"
+                          ToolTip="Edit appsettings.json directly with JSON validation"/>
             </MenuItem>
             <MenuItem Header="_Help">
-                <MenuItem Header="_Users Guide" Command="{Binding OpenUsersGuideCommand}"/>
-                <MenuItem Header="_About" Click="About_Click"/>
+                <MenuItem Header="_Users Guide" 
+                          Command="{Binding OpenUsersGuideCommand}"
+                          ToolTip="Open comprehensive users guide (F1)"
+                          InputGestureText="F1"/>
+                <MenuItem Header="_About" 
+                          Click="About_Click"
+                          ToolTip="About ZLGetCert - Version and credits"/>
             </MenuItem>
         </Menu>
 
@@ -80,24 +96,7 @@
                 
                 <!-- Quick Actions -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="⚙️ Settings" 
-                            Command="{Binding ShowSettingsCommand}"
-                            Margin="0,0,10,0">
-                        <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource ToggleButtonStyle}">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding ShowSettings}" Value="True">
-                                        <Setter Property="Background" Value="{StaticResource PrimaryColor}"/>
-                                        <Setter Property="Foreground" Value="White"/>
-                                        <Setter Property="BorderBrush" Value="{StaticResource PrimaryColor}"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                    <Button Content="ℹ️ About" 
-                            Click="About_Click"
-                            Style="{StaticResource ToggleButtonStyle}"/>
+                    <!-- Settings moved to Edit menu - no header button needed -->
                 </StackPanel>
             </Grid>
         </Border>
@@ -107,7 +106,21 @@
             <!-- Certificate Request Form -->
             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
                 <StackPanel>
-                    <TextBlock Text="Certificate Request" Style="{StaticResource HeaderTextStyle}"/>
+                    <Grid>
+                        <TextBlock Text="Certificate Request" 
+                                   Style="{StaticResource HeaderTextStyle}"
+                                   HorizontalAlignment="Left"/>
+                        <TextBlock HorizontalAlignment="Right" 
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,0,10">
+                            <Hyperlink Command="{Binding OpenUsersGuideCommand}" 
+                                       TextDecorations="None">
+                                <Run Text="❓ Click Here for Help" 
+                                     FontSize="14" 
+                                     Foreground="#007ACC"/>
+                            </Hyperlink>
+                        </TextBlock>
+                    </Grid>
                     
                     <!-- Certificate Authority Configuration Card -->
                     <Border Style="{StaticResource CardStyle}">
@@ -115,11 +128,11 @@
                             <TextBlock Text="Certificate Authority" Style="{StaticResource SectionHeaderStyle}"/>
                             
                             <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="CA Server" Style="{StaticResource FieldLabelStyle}"/>
+                                <TextBlock Text="CA Server *" Style="{StaticResource FieldLabelStyle}"/>
                                 <ComboBox ItemsSource="{Binding CertificateRequest.AvailableCAs}" 
                                           Text="{Binding CertificateRequest.CAServer}"
                                           IsEditable="True"
-                                          ToolTip="Select a CA from Active Directory or type a custom CA server name">
+                                          ToolTip="Required: Select your organization's Certificate Authority server from Active Directory or type a custom CA server name. Example: ca.company.com">
                                     <ComboBox.Style>
                                         <Style TargetType="ComboBox">
                                             <Setter Property="Foreground" Value="Black"/>
@@ -132,13 +145,13 @@
                             </StackPanel>
                             
                             <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="Certificate Template" Style="{StaticResource FieldLabelStyle}"/>
+                                <TextBlock Text="Certificate Template *" Style="{StaticResource FieldLabelStyle}"/>
                                 <ComboBox ItemsSource="{Binding CertificateRequest.AvailableTemplates}" 
                                           SelectedValue="{Binding CertificateRequest.Template}"
                                           SelectedValuePath="Name"
                                           DisplayMemberPath="DisplayText"
                                           IsEditable="True"
-                                          ToolTip="Select a template from the CA or type a custom template name">
+                                          ToolTip="Required: Select the certificate template (determines certificate type and usage). Examples: WebServer for SSL/TLS, CodeSigning for software signing, User for VPN/authentication">
                                     <ComboBox.Style>
                                         <Style TargetType="ComboBox">
                                             <Setter Property="Foreground" Value="Black"/>
@@ -159,7 +172,7 @@
                             <TextBlock Text="Certificate Options" Style="{StaticResource SectionHeaderStyle}"/>
                             <CheckBox Content="Wildcard Certificate (*.domain.com)"
                                       IsChecked="{Binding CertificateRequest.IsWildcard}"
-                                      ToolTip="Generate a wildcard certificate valid for all subdomains"
+                                      ToolTip="Generate a wildcard certificate valid for all subdomains. Example: *.company.com secures www.company.com, api.company.com, mail.company.com, etc."
                                       Margin="0,5,0,10"/>
                             <TextBlock Text="A wildcard certificate can secure *.company.com (all subdomains)" 
                                        Style="{StaticResource StatusTextStyle}"
@@ -204,10 +217,10 @@
                             <TextBlock Text="Domain Information" Style="{StaticResource SectionHeaderStyle}"/>
                             
                             <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="Hostname" Style="{StaticResource FieldLabelStyle}"/>
+                                <TextBlock Text="Hostname *" Style="{StaticResource FieldLabelStyle}"/>
                                 <TextBox Text="{Binding CertificateRequest.HostName}" 
                                          IsEnabled="{Binding CertificateRequest.IsWildcard, Converter={StaticResource InverseBoolConverter}}"
-                                         ToolTip="Server hostname (e.g., 'www', 'api', 'mail')"/>
+                                         ToolTip="Required for standard certificates: Server hostname without domain. Examples: www, api, mail, vpn"/>
                                 <TextBlock Text="Not needed for wildcard certificates" 
                                            Visibility="{Binding CertificateRequest.IsWildcard, Converter={StaticResource BoolToVisibilityConverter}}"
                                            Style="{StaticResource StatusTextStyle}"
@@ -219,7 +232,7 @@
                                 <TextBox Text="{Binding CertificateRequest.FQDN}" 
                                          IsReadOnly="True"
                                          Background="#F5F5F5"
-                                         ToolTip="Auto-generated from hostname and company domain"/>
+                                         ToolTip="Auto-generated from hostname + organization. Example: api.company.com = hostname (api) + organization (company.com)"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -238,13 +251,16 @@
                                 </Grid.ColumnDefinitions>
                                 
                                 <StackPanel Grid.Column="0" Style="{StaticResource FormGroupStyle}">
-                                    <TextBlock Text="Location (City)" Style="{StaticResource FieldLabelStyle}"/>
-                                    <TextBox Text="{Binding CertificateRequest.Location}"/>
+                                    <TextBlock Text="Location (City) *" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBox Text="{Binding CertificateRequest.Location}"
+                                             ToolTip="Required: City name for certificate subject. Examples: Seattle, New York, London"/>
                                 </StackPanel>
                                 
                                 <StackPanel Grid.Column="2" Style="{StaticResource FormGroupStyle}">
-                                    <TextBlock Text="State (2-letter code)" Style="{StaticResource FieldLabelStyle}"/>
-                                    <TextBox Text="{Binding CertificateRequest.State}" MaxLength="2"/>
+                                    <TextBlock Text="State *" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBox Text="{Binding CertificateRequest.State}" 
+                                             MaxLength="2"
+                                             ToolTip="Required: Two-letter state/province code. Examples: WA, CA, NY, TX"/>
                                 </StackPanel>
                             </Grid>
 
@@ -256,13 +272,15 @@
                                 </Grid.ColumnDefinitions>
                                 
                                 <StackPanel Grid.Column="0" Style="{StaticResource FormGroupStyle}">
-                                    <TextBlock Text="Company Domain" Style="{StaticResource FieldLabelStyle}"/>
-                                    <TextBox Text="{Binding CertificateRequest.Company}"/>
+                                    <TextBlock Text="Organization *" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBox Text="{Binding CertificateRequest.Company}"
+                                             ToolTip="Required: Your organization's domain name. Examples: company.com, organization.org"/>
                                 </StackPanel>
                                 
                                 <StackPanel Grid.Column="2" Style="{StaticResource FormGroupStyle}">
-                                    <TextBlock Text="Organizational Unit" Style="{StaticResource FieldLabelStyle}"/>
-                                    <TextBox Text="{Binding CertificateRequest.OU}"/>
+                                    <TextBlock Text="Organizational Unit *" Style="{StaticResource FieldLabelStyle}"/>
+                                    <TextBox Text="{Binding CertificateRequest.OU}"
+                                             ToolTip="Required: Department or division name. Examples: IT, Engineering, Operations"/>
                                 </StackPanel>
                             </Grid>
                         </StackPanel>
@@ -341,7 +359,7 @@
                             
                             <!-- PFX Password -->
                             <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="PFX Password" Style="{StaticResource FieldLabelStyle}"/>
+                                <TextBlock Text="PFX Password *" Style="{StaticResource FieldLabelStyle}"/>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -349,11 +367,13 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBox Grid.Column="0" 
                                              Text="{Binding CertificateRequest.PfxPassword}"
-                                             Margin="0,0,10,0"/>
+                                             Margin="0,0,10,0"
+                                             ToolTip="Required: Strong password to protect the PFX certificate file. Minimum 8 characters with uppercase, lowercase, and numbers."/>
                                     <Button Grid.Column="1" 
                                             Content="👁" 
                                             Command="{Binding CertificateRequest.TogglePasswordVisibilityCommand}"
-                                            Style="{StaticResource IconButtonStyle}"/>
+                                            Style="{StaticResource IconButtonStyle}"
+                                            ToolTip="Toggle password visibility"/>
                                 </Grid>
                                 <TextBlock Text="{Binding CertificateRequest.PasswordStrength}" 
                                            Style="{StaticResource StatusTextStyle}"/>
@@ -361,7 +381,7 @@
 
                             <!-- Confirm Password -->
                             <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="Confirm Password" Style="{StaticResource FieldLabelStyle}"/>
+                                <TextBlock Text="Confirm Password *" Style="{StaticResource FieldLabelStyle}"/>
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -369,11 +389,13 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBox Grid.Column="0" 
                                              Text="{Binding CertificateRequest.ConfirmPassword}"
-                                             Margin="0,0,10,0"/>
+                                             Margin="0,0,10,0"
+                                             ToolTip="Required: Re-enter your password to confirm it matches"/>
                                     <Button Grid.Column="1" 
                                             Content="👁" 
                                             Command="{Binding CertificateRequest.ToggleConfirmPasswordVisibilityCommand}"
-                                            Style="{StaticResource IconButtonStyle}"/>
+                                            Style="{StaticResource IconButtonStyle}"
+                                            ToolTip="Toggle password visibility"/>
                                 </Grid>
                             </StackPanel>
 
@@ -381,7 +403,7 @@
                             <StackPanel Style="{StaticResource FormGroupStyle}">
                                 <CheckBox Content="Extract PEM and KEY files" 
                                           IsChecked="{Binding CertificateRequest.ExtractPemKey}"
-                                          ToolTip="Export certificate and private key in PEM format (required for web servers)"/>
+                                          ToolTip="Export certificate and private key in PEM format. Required for Apache, NGINX, HAProxy and other web servers. Built-in .NET export - no OpenSSL needed."/>
                                 
                                 <!-- Security Warning for Unencrypted Keys -->
                                 <Border Background="#FFF3CD" 
@@ -422,7 +444,8 @@
                                 <CheckBox Content="Extract CA bundle (intermediate + root certificates)" 
                                           IsChecked="{Binding CertificateRequest.ExtractCaBundle}"
                                           IsEnabled="{Binding CertificateRequest.ExtractPemKey}"
-                                          Margin="0,5,0,0"/>
+                                          Margin="0,5,0,0"
+                                          ToolTip="Export the certificate chain (intermediate and root CA certificates) for full server validation. Recommended for web servers."/>
                                 <TextBlock Text="{Binding OpenSSLStatus}" 
                                            Style="{StaticResource StatusTextStyle}"
                                            Margin="0,5,0,0"/>
@@ -438,16 +461,20 @@
                                 <Button Content="🔧 Generate Certificate" 
                                         Command="{Binding GenerateCertificateCommand}"
                                         Style="{StaticResource PrimaryButtonStyle}"
-                                        Margin="0,0,10,0"/>
+                                        Margin="0,0,10,0"
+                                        ToolTip="Generate the certificate with the settings above (Alt+G)"
+                                        FontSize="14"
+                                        Padding="20,10"
+                                        FontWeight="SemiBold"/>
                                 <Button Content="📄 Import from CSR File..." 
                                         Command="{Binding CertificateRequest.ImportFromCSRCommand}"
                                         Style="{StaticResource SecondaryButtonStyle}"
-                                        ToolTip="Submit an existing Certificate Signing Request to the CA"
+                                        ToolTip="Submit an existing Certificate Signing Request file to the CA (Alt+I)"
                                         Margin="0,0,10,0"/>
                                 <Button Content="💾 Save as Defaults" 
                                         Command="{Binding SaveAsDefaultsCommand}"
                                         Style="{StaticResource SecondaryButtonStyle}"
-                                        ToolTip="Save current CA server, template, and organization settings as defaults"/>
+                                        ToolTip="Save current CA server, template, and organization settings as defaults (Alt+D)"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -455,97 +482,7 @@
             </ScrollViewer>
         </Grid>
 
-        <!-- Settings Panel (Toggleable) -->
-        <Border Grid.Row="2" 
-                Background="#F8F9FA" 
-                BorderBrush="#E9ECEF" 
-                BorderThickness="0,1,0,0"
-                Visibility="{Binding ShowSettings, Converter={StaticResource BoolToVisibilityConverter}}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
-                <StackPanel>
-                    <TextBlock Text="⚙️ Settings" Style="{StaticResource HeaderTextStyle}" Margin="0,0,0,20"/>
-                    
-
-                    <!-- File Paths Card -->
-                    <Border Style="{StaticResource CardStyle}">
-                        <StackPanel>
-                            <TextBlock Text="File Paths" Style="{StaticResource SectionHeaderStyle}"/>
-                            
-                            <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="Certificate Folder" Style="{StaticResource FieldLabelStyle}"/>
-                                <TextBox Text="{Binding Settings.Configuration.FilePaths.CertificateFolder}"/>
-                            </StackPanel>
-                            
-                            <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="Log Folder" Style="{StaticResource FieldLabelStyle}"/>
-                                <TextBox Text="{Binding Settings.Configuration.FilePaths.LogPath}"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Default Settings Card -->
-                    <Border Style="{StaticResource CardStyle}">
-                        <StackPanel>
-                            <TextBlock Text="Default Settings" Style="{StaticResource SectionHeaderStyle}"/>
-                            
-                            <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="Key Length" Style="{StaticResource FieldLabelStyle}"/>
-                                <TextBox Text="{Binding Settings.Configuration.DefaultSettings.KeyLength}"/>
-                            </StackPanel>
-                            
-                            <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="Hash Algorithm" Style="{StaticResource FieldLabelStyle}"/>
-                                <ComboBox SelectedValue="{Binding Settings.Configuration.DefaultSettings.HashAlgorithm}" 
-                                          ItemsSource="{Binding Settings.Configuration.DefaultSettings.AvailableHashAlgorithms}"/>
-                            </StackPanel>
-                            
-                            <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <CheckBox Content="Require password confirmation" 
-                                          IsChecked="{Binding Settings.Configuration.DefaultSettings.RequirePasswordConfirmation}"/>
-                                <CheckBox Content="Auto-cleanup temporary files" 
-                                          IsChecked="{Binding Settings.Configuration.DefaultSettings.AutoCleanup}"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Logging Settings Card -->
-                    <Border Style="{StaticResource CardStyle}">
-                        <StackPanel>
-                            <TextBlock Text="Logging Configuration" Style="{StaticResource SectionHeaderStyle}"/>
-                            
-                            <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="Log Level" Style="{StaticResource FieldLabelStyle}"/>
-                                <ComboBox SelectedValue="{Binding Settings.Configuration.Logging.LogLevel}" 
-                                          ItemsSource="{Binding Settings.Configuration.Logging.AvailableLogLevels}"/>
-                            </StackPanel>
-                            
-                            <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <CheckBox Content="Log to file" 
-                                          IsChecked="{Binding Settings.Configuration.Logging.LogToFile}"/>
-                                <CheckBox Content="Log to console" 
-                                          IsChecked="{Binding Settings.Configuration.Logging.LogToConsole}"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Action Buttons Card -->
-                    <Border Style="{StaticResource CardStyle}">
-                        <StackPanel>
-                            <TextBlock Text="Actions" Style="{StaticResource SectionHeaderStyle}"/>
-                            <StackPanel Orientation="Horizontal">
-                                <Button Content="💾 Save Settings" 
-                                        Command="{Binding Settings.SaveCommand}"
-                                        Style="{StaticResource PrimaryButtonStyle}"
-                                        Margin="0,0,10,0"/>
-                                <Button Content="🔄 Reset" 
-                                        Command="{Binding Settings.ResetCommand}"
-                                        Style="{StaticResource SecondaryButtonStyle}"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
-        </Border>
+        <!-- Settings panel removed - now opens in dedicated window -->
 
         <!-- Status Bar -->
         <Border Grid.Row="3" Background="#F8F9FA" BorderBrush="#E9ECEF" BorderThickness="0,1,0,0" Padding="20,15">
@@ -567,7 +504,10 @@
                             Command="{Binding GenerateCertificateCommand}"
                             Style="{StaticResource PrimaryButtonStyle}"
                             IsEnabled="{Binding CertificateRequest.CanGenerate}"
-                            Padding="15,8"/>
+                            Padding="20,10"
+                            FontSize="14"
+                            FontWeight="SemiBold"
+                            ToolTip="Generate the certificate with the settings above (Alt+G)"/>
                 </StackPanel>
             </Grid>
         </Border>

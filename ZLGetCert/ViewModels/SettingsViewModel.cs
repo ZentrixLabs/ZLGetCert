@@ -28,6 +28,7 @@ namespace ZLGetCert.ViewModels
 
             // Initialize commands
             SaveCommand = new RelayCommand(SaveSettings, CanSaveSettings);
+            SaveAndCloseCommand = new RelayCommand(SaveAndClose, CanSaveSettings);
             CancelCommand = new RelayCommand(CancelSettings);
             ResetCommand = new RelayCommand(ResetSettings);
 
@@ -70,6 +71,11 @@ namespace ZLGetCert.ViewModels
         /// Save settings command
         /// </summary>
         public ICommand SaveCommand { get; }
+
+        /// <summary>
+        /// Save and close command
+        /// </summary>
+        public ICommand SaveAndCloseCommand { get; }
 
         /// <summary>
         /// Cancel settings command
@@ -117,11 +123,31 @@ namespace ZLGetCert.ViewModels
         }
 
         /// <summary>
+        /// Save and close window
+        /// </summary>
+        private void SaveAndClose()
+        {
+            SaveSettings();
+            // Close the window
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                var window = System.Windows.Application.Current.Windows.OfType<Views.SettingsWindow>().FirstOrDefault();
+                window?.Close();
+            });
+        }
+
+        /// <summary>
         /// Cancel settings changes
         /// </summary>
         private void CancelSettings()
         {
             LoadConfiguration(_configService.GetConfiguration());
+            // Close the window
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                var window = System.Windows.Application.Current.Windows.OfType<Views.SettingsWindow>().FirstOrDefault();
+                window?.Close();
+            });
         }
 
         /// <summary>

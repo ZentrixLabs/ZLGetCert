@@ -62,47 +62,35 @@
                 
                 <!-- Description -->
                 <TextBlock TextWrapping="Wrap" Margin="0,0,0,20">
-                    ZLGetCert is a powerful and easy-to-use desktop application designed to simplify the process of generating and managing SSL/TLS certificates. Whether you need to create certificates from Certificate Signing Requests (CSRs) or generate new certificates directly, ZLGetCert provides a seamless experience with OpenSSL integration.
+                    ZLGetCert is a powerful and easy-to-use desktop application designed to simplify the process of generating and managing SSL/TLS certificates. Whether you need to create certificates from Certificate Signing Requests (CSRs) or generate new certificates directly, ZLGetCert provides a seamless experience with built-in PEM/KEY export.
                     <LineBreak/><LineBreak/>
-                    Built with .NET Framework 4.8 and WPF, this application leverages industry-standard OpenSSL tools for robust certificate generation and management. The application provides an intuitive interface for certificate operations with comprehensive logging and configuration management.
+                    Built with .NET Framework 4.8 and WPF, this application uses pure .NET cryptography for robust certificate generation and management - no external dependencies required. The application provides an intuitive interface for certificate operations with comprehensive logging and configuration management, perfect for air-gapped and restricted OT environments.
                 </TextBlock>
 
                 <!-- Key Features -->
                 <TextBlock Text="Key Features:" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
                 <StackPanel Margin="0,0,0,20">
                     <TextBlock Text="• Certificate Generation: Create SSL/TLS certificates from CSRs or generate new certificates directly" TextWrapping="Wrap" Margin="0,0,0,5"/>
-                    <TextBlock Text="• OpenSSL Integration: Leverages industry-standard OpenSSL tools for certificate operations" TextWrapping="Wrap" Margin="0,0,0,5"/>
+                    <TextBlock Text="• Built-in PEM/KEY Export: Pure .NET cryptography - no external dependencies required" TextWrapping="Wrap" Margin="0,0,0,5"/>
                     <TextBlock Text="• Wildcard Certificate Support: Generate wildcard certificates for subdomain management" TextWrapping="Wrap" Margin="0,0,0,5"/>
                     <TextBlock Text="• SAN Support: Create certificates with Subject Alternative Names (SAN)" TextWrapping="Wrap" Margin="0,0,0,5"/>
                     <TextBlock Text="• Configuration Management: Centralized settings and configuration management" TextWrapping="Wrap" Margin="0,0,0,5"/>
                     <TextBlock Text="• Real-time Logging: Provides detailed logs of all certificate operations" TextWrapping="Wrap" Margin="0,0,0,5"/>
                     <TextBlock Text="• User-friendly Interface: Intuitive WPF interface for certificate management" TextWrapping="Wrap" Margin="0,0,0,5"/>
                     <TextBlock Text="• Secure Operations: Secure handling of private keys and sensitive data" TextWrapping="Wrap" Margin="0,0,0,5"/>
+                    <TextBlock Text="• Air-gap Compatible: Perfect for isolated OT/SCADA environments" TextWrapping="Wrap" Margin="0,0,0,5"/>
                 </StackPanel>
 
                 <!-- Credits Section -->
-                <TextBlock Text="Credits &amp; Acknowledgments" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
+                <TextBlock Text="Technology &amp; Framework" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
                 <StackPanel Margin="0,0,0,20">
-                    <TextBlock Text="This application relies on excellent open-source tools:" TextWrapping="Wrap" Margin="0,0,0,10"/>
-                    
-                    <!-- OpenSSL -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                        <TextBlock Text="• " FontWeight="Bold"/>
-                        <TextBlock Text="OpenSSL" FontWeight="Bold"/>
-                        <TextBlock Text=" - Industry-standard cryptographic library for SSL/TLS operations" Margin="5,0,0,0"/>
-                    </StackPanel>
-                    <TextBlock Margin="0,0,0,5">
-                        <Run Text="    "/>
-                        <Hyperlink NavigateUri="https://www.openssl.org/" RequestNavigate="Hyperlink_RequestNavigate">
-                            <Run Text="https://www.openssl.org/"/>
-                        </Hyperlink>
-                    </TextBlock>
+                    <TextBlock Text="This application is built with:" TextWrapping="Wrap" Margin="0,0,0,10"/>
                     
                     <!-- .NET Framework -->
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                         <TextBlock Text="• " FontWeight="Bold"/>
-                        <TextBlock Text=".NET Framework" FontWeight="Bold"/>
-                        <TextBlock Text=" - Microsoft's application framework for Windows applications" Margin="5,0,0,0"/>
+                        <TextBlock Text=".NET Framework 4.8" FontWeight="Bold"/>
+                        <TextBlock Text=" - Microsoft's application framework with built-in cryptography" Margin="5,0,0,0"/>
                     </StackPanel>
                     <TextBlock Margin="0,0,0,5">
                         <Run Text="    "/>
@@ -110,6 +98,17 @@
                             <Run Text="https://dotnet.microsoft.com/"/>
                         </Hyperlink>
                     </TextBlock>
+                    
+                    <!-- Pure .NET Crypto -->
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
+                        <TextBlock Text="• " FontWeight="Bold"/>
+                        <TextBlock Text="System.Security.Cryptography" FontWeight="Bold"/>
+                        <TextBlock Text=" - Native .NET libraries for RSA, X.509, and PEM/KEY operations" Margin="5,0,0,0"/>
+                    </StackPanel>
+                    <TextBlock Text="    All certificate operations use trusted Microsoft cryptographic libraries" 
+                               Margin="0,0,0,5"
+                               FontSize="12"
+                               Foreground="Gray"/>
                 </StackPanel>
 
                 <!-- Links Section -->

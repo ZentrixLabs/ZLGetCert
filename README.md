@@ -28,6 +28,7 @@ A modern Windows WPF application that simplifies certificate requests from on-pr
 - **Windows Server 2016** or later (Windows Server 2012 R2 also supported)
 - **.NET Framework 4.8** (included in Windows Server 2019+, downloadable for older versions)
 - **Administrator privileges** (for certificate store operations)
+- **No external dependencies** - PEM/KEY export built-in using .NET cryptography
 
 ### Why .NET Framework 4.8?
 
@@ -171,16 +172,17 @@ The application uses `appsettings.json` for configuration. All UI options are dy
 
 ## PEM/KEY Export (Built-in)
 
-The application includes a **pure .NET implementation** for PEM and KEY file extraction - no external dependencies required!
+The application includes a **pure .NET implementation** for PEM and KEY file extraction - **no external dependencies or OpenSSL required**!
 
 Features:
-- **Extract PEM and KEY files** from PFX certificates using built-in .NET cryptography
-- **Generate certificate chains** (root/intermediate certificates)
-- **No OpenSSL required** - works out of the box on any Windows system
-- **PKCS#1 format** - compatible with Apache, NGINX, HAProxy, and other web servers
+- **Built-in .NET cryptography** - PEM and KEY extraction using native .NET Framework 4.8
+- **Zero external dependencies** - works out of the box on any Windows system
+- **Generate certificate chains** - automatic root/intermediate certificate bundle export
+- **PKCS#1 format** - fully compatible with Apache, NGINX, HAProxy, and all web servers
 - **RSA key support** - handles all common SSL/TLS certificate key sizes (2048-bit, 4096-bit)
+- **Air-gap compatible** - perfect for isolated OT/SCADA environments
 
-The pure .NET implementation ensures compatibility with air-gapped and restricted environments where installing third-party tools like OpenSSL is not permitted.
+The pure .NET implementation ensures compatibility with air-gapped and restricted environments where installing third-party tools like OpenSSL is not permitted. All cryptographic operations are performed using trusted Microsoft .NET Framework libraries.
 
 ## Logging
 
@@ -317,11 +319,12 @@ For issues and questions:
 
 ## Recent Updates
 
-- **Pure .NET PEM/KEY Export**: Built-in certificate extraction - no OpenSSL required!
+- **Pure .NET PEM/KEY Export**: Built-in certificate extraction - **zero external dependencies**!
+  - Native .NET Framework 4.8 cryptography - no OpenSSL installation needed
   - PKCS#1 RSA private key encoding using custom ASN.1/DER implementation
   - Certificate chain extraction for intermediate/root certificates
-  - Compatible with all .NET Framework 4.8 systems
-  - Works in air-gapped and restricted environments
+  - Works out-of-the-box on any Windows system with .NET 4.8
+  - Perfect for air-gapped, OT/SCADA, and restricted environments
 - **UI Overhaul**: Modern card-based layout with improved visual hierarchy
 - **Configuration Management**: All options now loaded from appsettings.json
 - **Settings Panel**: Toggleable full-width settings with real-time updates
