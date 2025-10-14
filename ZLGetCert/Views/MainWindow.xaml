@@ -372,6 +372,23 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
+
+                    <!-- Action Buttons Card -->
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="Actions" Style="{StaticResource SectionHeaderStyle}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="🔧 Generate Certificate" 
+                                        Command="{Binding GenerateCommand}"
+                                        Style="{StaticResource PrimaryButtonStyle}"
+                                        Margin="0,0,10,0"/>
+                                <Button Content="💾 Save as Defaults" 
+                                        Command="{Binding SaveAsDefaultsCommand}"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        ToolTip="Save current CA server, template, and organization settings as defaults"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
         </Grid>
@@ -386,28 +403,6 @@
                 <StackPanel>
                     <TextBlock Text="⚙️ Settings" Style="{StaticResource HeaderTextStyle}" Margin="0,0,0,20"/>
                     
-                    <!-- Default Certificate Settings Card -->
-                    <Border Style="{StaticResource CardStyle}">
-                        <StackPanel>
-                            <TextBlock Text="Default Certificate Settings" Style="{StaticResource SectionHeaderStyle}"/>
-                            
-                            <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="Default Company (Domain)" Style="{StaticResource FieldLabelStyle}"/>
-                                <TextBox Text="{Binding Settings.Configuration.CertificateAuthority.DefaultCompany}"/>
-                                <TextBlock Text="Used as the default domain for new certificate requests" 
-                                           Style="{StaticResource StatusTextStyle}"
-                                           Margin="0,2,0,0"/>
-                            </StackPanel>
-                            
-                            <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="Default Organizational Unit (OU)" Style="{StaticResource FieldLabelStyle}"/>
-                                <TextBox Text="{Binding Settings.Configuration.CertificateAuthority.DefaultOU}"/>
-                                <TextBlock Text="Default OU for certificate subject" 
-                                           Style="{StaticResource StatusTextStyle}"
-                                           Margin="0,2,0,0"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
 
                     <!-- File Paths Card -->
                     <Border Style="{StaticResource CardStyle}">

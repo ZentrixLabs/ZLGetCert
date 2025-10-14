@@ -284,7 +284,7 @@ namespace ZLGetCert.Services
         }
 
         /// <summary>
-        /// Parse certutil template output
+        /// Parse certutil template output and filter out access denied templates
         /// </summary>
         private List<CertificateTemplate> ParseTemplateOutput(string output)
         {
@@ -294,8 +294,6 @@ namespace ZLGetCert.Services
             {
                 // Split output into lines
                 var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                
-                CertificateTemplate currentTemplate = null;
 
                 foreach (var line in lines)
                 {
@@ -305,77 +303,69 @@ namespace ZLGetCert.Services
                     if (string.IsNullOrWhiteSpace(trimmedLine) || trimmedLine.StartsWith("---"))
                         continue;
 
-                    // Check for template name (usually starts at the beginning of a line)
-                    // Format is typically: TemplateName -- DisplayName
-                    if (!trimmedLine.StartsWith(" ") && trimmedLine.Contains("--"))
+                    // Skip lines that are entirely access denied (but allow auto-enroll denied)
+                    if (trimmedLine.StartsWith("Access is denied.") || 
+                        trimmedLine.EndsWith("-- Access is denied."))
                     {
-                        if (currentTemplate != null)
-                        {
-                            templates.Add(currentTemplate);
-                        }
+                        continue; // Skip this template entirely - completely denied
+                    }
 
-                        var parts = trimmedLine.Split(new[] { "--" }, StringSplitOptions.None);
-                        currentTemplate = new CertificateTemplate
-                        {
-                            Name = parts[0].Trim(),
-                            DisplayName = parts.Length > 1 ? parts[1].Trim() : parts[0].Trim()
-                        };
-                    }
-                    // Alternative format: just template name
-                    else if (!trimmedLine.StartsWith(" ") && currentTemplate == null)
+                    // Skip certutil completion messages
+                    if (trimmedLine.StartsWith("CertUtil:") || 
+                        trimmedLine.Contains("command completed successfully"))
                     {
-                        currentTemplate = new CertificateTemplate
-                        {
-                            Name = trimmedLine,
-                            DisplayName = trimmedLine
-                        };
+                        continue;
                     }
-                    // Check for OID
-                    else if (trimmedLine.StartsWith("Template OID:") || trimmedLine.Contains("OID ="))
+
+                    // Look for template lines that contain template information
+                    // Format examples from the image:
+                    // "Auto-Enroll: Access is denied. (CodeSigning_MP_Modern: Code Signing_MP_Modern)"
+                    // "Access is denied. (DirectoryEmailReplication: Directory Email Replication)"
+                    if (trimmedLine.Contains("(") && trimmedLine.Contains(":"))
                     {
-                        var match = Regex.Match(trimmedLine, @"(\d+\.)+\d+");
-                        if (match.Success && currentTemplate != null)
+                        // Extract template info from parentheses
+                        var startParen = trimmedLine.IndexOf('(');
+                        var endParen = trimmedLine.LastIndexOf(')');
+                        
+                        if (startParen >= 0 && endParen > startParen)
                         {
-                            currentTemplate.OID = match.Value;
+                            var templateInfo = trimmedLine.Substring(startParen + 1, endParen - startParen - 1);
+                            var parts = templateInfo.Split(':');
+                            
+                            if (parts.Length >= 2)
+                            {
+                                var templateName = parts[0].Trim();
+                                var displayName = parts[1].Trim();
+                                
+                                // Only add if this template is NOT entirely access denied
+                                // Auto-enroll denied is OK - we can still manually request
+                                if (!trimmedLine.StartsWith("Access is denied.") && 
+                                    !trimmedLine.EndsWith("-- Access is denied."))
+                                {
+                                    templates.Add(new CertificateTemplate
+                                    {
+                                        Name = templateName,
+                                        DisplayName = displayName
+                                    });
+                                }
+                            }
                         }
                     }
-                    // Check for version
-                    else if (trimmedLine.Contains("Version") && currentTemplate != null)
+                    // Look for simple template names (without entirely access denied prefix)
+                    else if (!trimmedLine.StartsWith("Access is denied") && 
+                             !trimmedLine.EndsWith("-- Access is denied.") &&
+                             !trimmedLine.StartsWith("Certificate") &&
+                             !trimmedLine.StartsWith("Template") &&
+                             !trimmedLine.Contains("===") &&
+                             !trimmedLine.Contains("---") &&
+                             trimmedLine.Length > 2)
                     {
-                        var match = Regex.Match(trimmedLine, @"\d+");
-                        if (match.Success)
-                        {
-                            int.TryParse(match.Value, out int version);
-                            currentTemplate.Version = version;
-                        }
-                    }
-                }
-
-                // Add the last template
-                if (currentTemplate != null)
-                {
-                    templates.Add(currentTemplate);
-                }
-
-                // If the above parsing didn't work, try a simpler approach
-                // Some certutil versions just list template names one per line
-                if (templates.Count == 0)
-                {
-                    foreach (var line in lines)
-                    {
-                        var trimmedLine = line.Trim();
-                        if (!string.IsNullOrWhiteSpace(trimmedLine) && 
-                            !trimmedLine.Contains("===") &&
-                            !trimmedLine.Contains("---") &&
-                            !trimmedLine.StartsWith("Certificate") &&
-                            !trimmedLine.StartsWith("Template"))
-                        {
-                            templates.Add(new CertificateTemplate
+                        // This might be a simple template name
+                        templates.Add(new CertificateTemplate
                             {
                                 Name = trimmedLine,
                                 DisplayName = trimmedLine
                             });
-                        }
                     }
                 }
             }

@@ -51,6 +51,7 @@ namespace ZLGetCert.ViewModels
             RemoveIpSanCommand = new RelayCommand<SanEntry>(RemoveIpSan);
             OpenConfigurationEditorCommand = new RelayCommand(OpenConfigurationEditor);
             OpenUsersGuideCommand = new RelayCommand(OpenUsersGuide);
+            SaveAsDefaultsCommand = new RelayCommand(SaveAsDefaults);
 
             // Initialize properties
             _statusMessage = "Ready to generate certificate";
@@ -177,6 +178,11 @@ namespace ZLGetCert.ViewModels
         public ICommand OpenUsersGuideCommand { get; }
 
         /// <summary>
+        /// Save current settings as defaults command
+        /// </summary>
+        public ICommand SaveAsDefaultsCommand { get; }
+
+        /// <summary>
         /// Load configuration and update UI
         /// </summary>
         private void LoadConfiguration()
@@ -188,6 +194,8 @@ namespace ZLGetCert.ViewModels
                 // Update certificate request with default values from configuration
                 CertificateRequest.Company = config.CertificateAuthority.DefaultCompany;
                 CertificateRequest.OU = config.CertificateAuthority.DefaultOU;
+                CertificateRequest.Location = config.CertificateAuthority.DefaultLocation;
+                CertificateRequest.State = config.CertificateAuthority.DefaultState;
                 CertificateRequest.CAServer = config.CertificateAuthority.Server;
                 CertificateRequest.Template = config.CertificateAuthority.Template;
                 CertificateRequest.ExtractPemKey = true; // Always available with pure .NET implementation
@@ -370,6 +378,38 @@ namespace ZLGetCert.ViewModels
         private void RemoveIpSan(SanEntry entry)
         {
             CertificateRequest.RemoveIpSan(entry);
+        }
+
+        /// <summary>
+        /// Save current certificate settings as defaults
+        /// </summary>
+        private void SaveAsDefaults()
+        {
+            try
+            {
+                var config = _configService.GetConfiguration();
+                
+                // Update the configuration with current certificate request values
+                config.CertificateAuthority.Server = CertificateRequest.CAServer;
+                config.CertificateAuthority.Template = CertificateRequest.Template;
+                config.CertificateAuthority.DefaultCompany = CertificateRequest.Company;
+                config.CertificateAuthority.DefaultOU = CertificateRequest.OU;
+                config.CertificateAuthority.DefaultLocation = CertificateRequest.Location;
+                config.CertificateAuthority.DefaultState = CertificateRequest.State;
+                
+                // Save the updated configuration
+                _configService.SaveConfiguration(config);
+                
+                StatusMessage = "Default settings saved successfully";
+                _logger.LogInfo("Default certificate settings saved: CA={0}, Template={1}, Company={2}, OU={3}, Location={4}, State={5}", 
+                    CertificateRequest.CAServer, CertificateRequest.Template, CertificateRequest.Company, CertificateRequest.OU, 
+                    CertificateRequest.Location, CertificateRequest.State);
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"Failed to save defaults: {ex.Message}";
+                _logger.LogError(ex, "Failed to save default certificate settings");
+            }
         }
     }
 

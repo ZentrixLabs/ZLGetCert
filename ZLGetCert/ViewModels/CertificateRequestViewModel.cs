@@ -183,8 +183,18 @@ namespace ZLGetCert.ViewModels
             {
                 if (SetProperty(ref _type, value))
                 {
-                    // Clear all form fields when certificate type changes
-                    ClearFormFields();
+                    // Clear only the fields that are specific to certificate type
+                    if (value == CertificateType.FromCSR)
+                    {
+                        // Clear hostname/FQDN fields for CSR type
+                        HostName = "";
+                        FQDN = "";
+                    }
+                    else if (value == CertificateType.Wildcard)
+                    {
+                        // Clear hostname for wildcard type (FQDN will be auto-generated)
+                        HostName = "";
+                    }
                     
                     OnPropertyChanged(nameof(IsWildcard));
                     OnPropertyChanged(nameof(IsFromCSR));

@@ -106,6 +106,8 @@ namespace ZLGetCert.Models
         private string _template;
         private string _defaultCompany;
         private string _defaultOU;
+        private string _defaultLocation;
+        private string _defaultState;
         private List<CertificateTemplate> _availableTemplates;
 
         public CertificateAuthorityConfig()
@@ -162,6 +164,32 @@ namespace ZLGetCert.Models
             {
                 _defaultOU = value;
                 OnPropertyChanged(nameof(DefaultOU));
+            }
+        }
+
+        /// <summary>
+        /// Default location (city)
+        /// </summary>
+        public string DefaultLocation
+        {
+            get => _defaultLocation;
+            set
+            {
+                _defaultLocation = value;
+                OnPropertyChanged(nameof(DefaultLocation));
+            }
+        }
+
+        /// <summary>
+        /// Default state (2-letter code)
+        /// </summary>
+        public string DefaultState
+        {
+            get => _defaultState;
+            set
+            {
+                _defaultState = value;
+                OnPropertyChanged(nameof(DefaultState));
             }
         }
 
