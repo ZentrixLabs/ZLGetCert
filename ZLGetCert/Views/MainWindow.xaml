@@ -103,6 +103,49 @@
                 <StackPanel>
                     <TextBlock Text="Certificate Request" Style="{StaticResource HeaderTextStyle}"/>
                     
+                    <!-- Certificate Authority Configuration Card -->
+                    <Border Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="Certificate Authority" Style="{StaticResource SectionHeaderStyle}"/>
+                            
+                            <StackPanel Style="{StaticResource FormGroupStyle}">
+                                <TextBlock Text="CA Server" Style="{StaticResource FieldLabelStyle}"/>
+                                <ComboBox ItemsSource="{Binding CertificateRequest.AvailableCAs}" 
+                                          Text="{Binding CertificateRequest.CAServer}"
+                                          IsEditable="True"
+                                          ToolTip="Select a CA from Active Directory or type a custom CA server name">
+                                    <ComboBox.Style>
+                                        <Style TargetType="ComboBox">
+                                            <Setter Property="Foreground" Value="Black"/>
+                                        </Style>
+                                    </ComboBox.Style>
+                                </ComboBox>
+                                <TextBlock Text="Select from Active Directory CAs or type a custom server name" 
+                                           Style="{StaticResource StatusTextStyle}"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+                            
+                            <StackPanel Style="{StaticResource FormGroupStyle}">
+                                <TextBlock Text="Certificate Template" Style="{StaticResource FieldLabelStyle}"/>
+                                <ComboBox ItemsSource="{Binding CertificateRequest.AvailableTemplates}" 
+                                          SelectedValue="{Binding CertificateRequest.Template}"
+                                          SelectedValuePath="Name"
+                                          DisplayMemberPath="DisplayText"
+                                          IsEditable="True"
+                                          ToolTip="Select a template from the CA or type a custom template name">
+                                    <ComboBox.Style>
+                                        <Style TargetType="ComboBox">
+                                            <Setter Property="Foreground" Value="Black"/>
+                                        </Style>
+                                    </ComboBox.Style>
+                                </ComboBox>
+                                <TextBlock Text="Select from the list or type a custom template name" 
+                                           Style="{StaticResource StatusTextStyle}"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Certificate Type Selection Card -->
                     <Border Style="{StaticResource CardStyle}">
                         <StackPanel>
@@ -315,12 +358,17 @@
                                 </Grid>
                             </StackPanel>
 
-                            <!-- OpenSSL Options -->
+                            <!-- PEM/KEY Export Options -->
                             <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <CheckBox Content="Extract PEM and KEY files (requires OpenSSL)" 
+                                <CheckBox Content="Extract PEM and KEY files" 
                                           IsChecked="{Binding CertificateRequest.ExtractPemKey}"/>
+                                <CheckBox Content="Extract CA bundle (intermediate + root certificates)" 
+                                          IsChecked="{Binding CertificateRequest.ExtractCaBundle}"
+                                          IsEnabled="{Binding CertificateRequest.ExtractPemKey}"
+                                          Margin="0,5,0,0"/>
                                 <TextBlock Text="{Binding OpenSSLStatus}" 
-                                           Style="{StaticResource StatusTextStyle}"/>
+                                           Style="{StaticResource StatusTextStyle}"
+                                           Margin="0,5,0,0"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -338,60 +386,25 @@
                 <StackPanel>
                     <TextBlock Text="⚙️ Settings" Style="{StaticResource HeaderTextStyle}" Margin="0,0,0,20"/>
                     
-                    <!-- Certificate Authority Settings Card -->
+                    <!-- Default Certificate Settings Card -->
                     <Border Style="{StaticResource CardStyle}">
                         <StackPanel>
-                            <TextBlock Text="Certificate Authority" Style="{StaticResource SectionHeaderStyle}"/>
+                            <TextBlock Text="Default Certificate Settings" Style="{StaticResource SectionHeaderStyle}"/>
                             
                             <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="CA Server" Style="{StaticResource FieldLabelStyle}"/>
-                                <TextBox Text="{Binding Settings.Configuration.CertificateAuthority.Server}"/>
-                            </StackPanel>
-                            
-                            <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="Certificate Template" Style="{StaticResource FieldLabelStyle}"/>
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                        <TextBlock Text="{Binding Settings.TemplateLoadStatus}" 
-                                                   Style="{StaticResource StatusTextStyle}"
-                                                   VerticalAlignment="Center"
-                                                   Margin="0,0,10,0"/>
-                                        <Button Content="🔄" 
-                                                Command="{Binding Settings.RefreshTemplatesCommand}"
-                                                ToolTip="Refresh templates from CA"
-                                                Style="{StaticResource IconButtonStyle}"
-                                                IsEnabled="{Binding Settings.IsLoadingTemplates, Converter={StaticResource InverseBoolConverter}}"/>
-                                    </StackPanel>
-                                </Grid>
-                                <ComboBox ItemsSource="{Binding Settings.Configuration.CertificateAuthority.AvailableTemplates}" 
-                                          SelectedValue="{Binding Settings.Configuration.CertificateAuthority.Template}"
-                                          SelectedValuePath="Name"
-                                          DisplayMemberPath="DisplayText"
-                                          IsEditable="True"
-                                          ToolTip="Select a template from the CA or type a custom template name">
-                                    <ComboBox.Style>
-                                        <Style TargetType="ComboBox">
-                                            <Setter Property="Foreground" Value="Black"/>
-                                        </Style>
-                                    </ComboBox.Style>
-                                </ComboBox>
-                                <TextBlock Text="Select from the list or type a custom template name" 
+                                <TextBlock Text="Default Company (Domain)" Style="{StaticResource FieldLabelStyle}"/>
+                                <TextBox Text="{Binding Settings.Configuration.CertificateAuthority.DefaultCompany}"/>
+                                <TextBlock Text="Used as the default domain for new certificate requests" 
                                            Style="{StaticResource StatusTextStyle}"
                                            Margin="0,2,0,0"/>
                             </StackPanel>
                             
                             <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="Default Company" Style="{StaticResource FieldLabelStyle}"/>
-                                <TextBox Text="{Binding Settings.Configuration.CertificateAuthority.DefaultCompany}"/>
-                            </StackPanel>
-                            
-                            <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="Default OU" Style="{StaticResource FieldLabelStyle}"/>
+                                <TextBlock Text="Default Organizational Unit (OU)" Style="{StaticResource FieldLabelStyle}"/>
                                 <TextBox Text="{Binding Settings.Configuration.CertificateAuthority.DefaultOU}"/>
+                                <TextBlock Text="Default OU for certificate subject" 
+                                           Style="{StaticResource StatusTextStyle}"
+                                           Margin="0,2,0,0"/>
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -410,28 +423,6 @@
                                 <TextBlock Text="Log Folder" Style="{StaticResource FieldLabelStyle}"/>
                                 <TextBox Text="{Binding Settings.Configuration.FilePaths.LogPath}"/>
                             </StackPanel>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- OpenSSL Settings Card -->
-                    <Border Style="{StaticResource CardStyle}">
-                        <StackPanel>
-                            <TextBlock Text="OpenSSL Configuration" Style="{StaticResource SectionHeaderStyle}"/>
-                            
-                            <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <CheckBox Content="Auto-detect OpenSSL" 
-                                          IsChecked="{Binding Settings.Configuration.OpenSSL.AutoDetect}"/>
-                            </StackPanel>
-                            
-                            <StackPanel Style="{StaticResource FormGroupStyle}">
-                                <TextBlock Text="OpenSSL Executable Path" Style="{StaticResource FieldLabelStyle}"/>
-                                <TextBox Text="{Binding Settings.Configuration.OpenSSL.ExecutablePath}"/>
-                            </StackPanel>
-                            
-                            <Button Content="🔧 Test OpenSSL" 
-                                    Command="{Binding Settings.TestOpenSSLCommand}"
-                                    Style="{StaticResource SecondaryButtonStyle}"
-                                    Margin="0,10,0,0"/>
                         </StackPanel>
                     </Border>
 

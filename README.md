@@ -6,6 +6,8 @@
 
 A modern Windows WPF application that simplifies certificate requests from on-premises Certificate Authority (CA) without requiring PowerShell or command-line expertise. Features a clean, card-based UI with comprehensive configuration management.
 
+**Built on .NET Framework 4.8** for maximum compatibility with legacy servers, OT (Operational Technology) environments, and air-gapped systems where newer .NET versions may not be available.
+
 ## Features
 
 - **Modern UI**: Clean, card-based interface with improved UX and visual hierarchy
@@ -13,19 +15,31 @@ A modern Windows WPF application that simplifies certificate requests from on-pr
 - **Configurable Options**: Dynamic hash algorithms and log levels loaded from configuration
 - **Centralized Logging**: Comprehensive logging to `C:\ProgramData\ZentrixLabs\ZLGetCert`
 - **Environment Configuration**: Flexible configuration via `appsettings.json`
-- **OpenSSL Integration**: Optional PEM/KEY extraction when OpenSSL is available
+- **Built-in PEM/KEY Export**: Pure .NET implementation - no external dependencies required
 - **Secure Password Handling**: User-configurable PFX passwords with secure storage
 - **Certificate Chain Support**: Automatic root/intermediate certificate chain compilation
 - **Settings Panel**: Toggleable settings with real-time configuration updates
 - **JSON Validator**: Real-time validation with color-coded feedback and error details
 - **Visual Feedback**: Status indicators and progress tracking
+- **Legacy Compatibility**: .NET Framework 4.8 for OT/SCADA and older server environments
 
 ## Prerequisites
 
-- **Windows Server 2016** or later
-- **.NET Framework 4.8**
-- **OpenSSL for Windows** (optional, for PEM/KEY extraction)
+- **Windows Server 2016** or later (Windows Server 2012 R2 also supported)
+- **.NET Framework 4.8** (included in Windows Server 2019+, downloadable for older versions)
 - **Administrator privileges** (for certificate store operations)
+
+### Why .NET Framework 4.8?
+
+This application intentionally targets **.NET Framework 4.8** rather than modern .NET Core/.NET 6+ to ensure maximum compatibility with:
+
+- **Legacy Servers**: Windows Server 2012 R2, 2016, 2019 environments
+- **OT/SCADA Systems**: Operational Technology and industrial control systems
+- **Air-Gapped Networks**: Environments where installing newer .NET runtimes is restricted
+- **Enterprise Policies**: Organizations with strict server configuration requirements
+- **Embedded Systems**: Windows-based controllers and specialized hardware
+
+.NET Framework 4.8 ships with Windows Server 2019+ and is easily installed on older systems without requiring major OS updates.
 
 ## Quick Start
 
@@ -75,14 +89,6 @@ The application uses `appsettings.json` for configuration. All UI options are dy
   "FilePaths": {
     "CertificateFolder": "C:\\ssl",
     "LogPath": "C:\\ProgramData\\ZentrixLabs\\ZLGetCert"
-  },
-  "OpenSSL": {
-    "ExecutablePath": "",
-    "AutoDetect": true,
-    "CommonPaths": [
-      "C:\\Program Files\\OpenSSL-Win64\\bin\\openssl.exe",
-      "C:\\Program Files (x86)\\OpenSSL-Win32\\bin\\openssl.exe"
-    ]
   },
   "DefaultSettings": {
     "KeyLength": 2048,
@@ -163,12 +169,18 @@ The application uses `appsettings.json` for configuration. All UI options are dy
 - **Wildcard**: Wildcard domain certificates (*.domain.com)
 - **From CSR**: Submit existing CSR files to CA
 
-## OpenSSL Integration
+## PEM/KEY Export (Built-in)
 
-When OpenSSL is detected, the application can:
-- Extract PEM and KEY files from PFX certificates
-- Generate certificate chains (root/intermediate)
-- Clean up temporary files automatically
+The application includes a **pure .NET implementation** for PEM and KEY file extraction - no external dependencies required!
+
+Features:
+- **Extract PEM and KEY files** from PFX certificates using built-in .NET cryptography
+- **Generate certificate chains** (root/intermediate certificates)
+- **No OpenSSL required** - works out of the box on any Windows system
+- **PKCS#1 format** - compatible with Apache, NGINX, HAProxy, and other web servers
+- **RSA key support** - handles all common SSL/TLS certificate key sizes (2048-bit, 4096-bit)
+
+The pure .NET implementation ensures compatibility with air-gapped and restricted environments where installing third-party tools like OpenSSL is not permitted.
 
 ## Logging
 
@@ -184,6 +196,33 @@ All operations are logged to `C:\ProgramData\ZentrixLabs\ZLGetCert` with:
 - Secure password storage in configuration
 - Password masking in UI and logs
 - Automatic memory cleanup
+
+## Deployment in Restricted Environments
+
+ZLGetCert is specifically designed for deployment in secure and restricted environments:
+
+### Air-Gapped Networks
+- **No Internet Required**: All operations are performed locally
+- **No External Dependencies**: Pure .NET Framework 4.8 - no third-party binaries
+- **Offline Installation**: Deploy via file copy or internal package management
+
+### OT/SCADA Environments
+- **Minimal Footprint**: Small executable with no external dependencies
+- **No Registry Changes**: (except for .NET Framework 4.8 if not already installed)
+- **Predictable Behavior**: No automatic updates or telemetry
+- **Logging Control**: All logs stored locally, configurable retention
+
+### Enterprise Compliance
+- **Approved Framework**: .NET Framework 4.8 is typically pre-approved in most enterprises
+- **No Elevated Privileges for App**: Only requires admin for certificate store operations
+- **Auditable**: Comprehensive logging of all operations
+- **Configuration as Code**: JSON-based configuration for version control
+
+### Installation in Secure Environments
+1. Transfer the application files via approved methods (removable media, internal repository)
+2. Verify .NET Framework 4.8 is installed (included in Windows Server 2019+)
+3. Configure `appsettings.json` with your CA details
+4. Run with administrator privileges for certificate operations
 
 ## Development
 
@@ -219,9 +258,11 @@ The application uses modern WPF patterns:
 - **Configuration-Driven**: All options loaded from appsettings.json
 
 ### Key Technologies
-- **.NET Framework 4.8**: Target framework
+- **.NET Framework 4.8**: Target framework (intentionally chosen for legacy system compatibility)
 - **WPF**: Windows Presentation Foundation
 - **MVVM Pattern**: Model-View-ViewModel architecture
+- **System.Security.Cryptography**: Built-in .NET cryptography (RSA, X509 certificates)
+- **Custom ASN.1/DER Encoder**: Pure .NET PKCS#1 private key encoding
 - **Newtonsoft.Json**: Configuration serialization
 - **NLog**: Logging framework
 
@@ -248,10 +289,11 @@ We welcome contributions! Please follow these steps:
 ## Roadmap
 
 - [ ] Support for additional certificate types
-- [ ] Enhanced OpenSSL integration
 - [ ] Certificate renewal automation
+- [ ] Certificate expiration monitoring and alerts
 - [ ] Multi-language support
 - [ ] Plugin architecture for custom validators
+- [ ] Encrypted private key export (password-protected .key files)
 
 ## License
 
@@ -271,10 +313,15 @@ For issues and questions:
 - Create an issue in the GitHub repository
 - Check the logs in `C:\ProgramData\ZentrixLabs\ZLGetCert`
 - Review the configuration in `appsettings.json`
-- Verify OpenSSL installation if using PEM/KEY extraction
+- Verify .NET Framework 4.8 is installed on your system
 
 ## Recent Updates
 
+- **Pure .NET PEM/KEY Export**: Built-in certificate extraction - no OpenSSL required!
+  - PKCS#1 RSA private key encoding using custom ASN.1/DER implementation
+  - Certificate chain extraction for intermediate/root certificates
+  - Compatible with all .NET Framework 4.8 systems
+  - Works in air-gapped and restricted environments
 - **UI Overhaul**: Modern card-based layout with improved visual hierarchy
 - **Configuration Management**: All options now loaded from appsettings.json
 - **Settings Panel**: Toggleable full-width settings with real-time updates

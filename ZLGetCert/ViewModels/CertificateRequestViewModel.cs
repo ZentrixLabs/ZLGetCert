@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Security;
 using System.Windows.Input;
 using ZLGetCert.Models;
 using ZLGetCert.Enums;
 using ZLGetCert.Utilities;
+using ZLGetCert.Services;
 
 namespace ZLGetCert.ViewModels
 {
@@ -19,16 +21,23 @@ namespace ZLGetCert.ViewModels
         private string _state;
         private string _company;
         private string _ou;
+        private string _caServer;
+        private string _template;
         private CertificateType _type;
         private string _csrFilePath;
         private bool _extractPemKey;
+        private bool _extractCaBundle;
         private string _pfxPassword;
         private string _confirmPassword;
         private bool _showPassword;
         private bool _showConfirmPassword;
+        private readonly CertificateService _certificateService;
 
         public CertificateRequestViewModel()
         {
+            // Initialize services
+            _certificateService = CertificateService.Instance;
+            
             // Initialize collections
             DnsSans = new ObservableCollection<SanEntry>();
             IpSans = new ObservableCollection<SanEntry>();
@@ -37,7 +46,10 @@ namespace ZLGetCert.ViewModels
             _type = CertificateType.Standard;
             _company = "example.com";
             _ou = "IT";
-            _extractPemKey = false;
+            _caServer = "";
+            _template = "";
+            _extractPemKey = true; // Default to true since it's always available
+            _extractCaBundle = true; // Default to true - extract CA chain
             _showPassword = false;
             _showConfirmPassword = false;
 
@@ -132,6 +144,36 @@ namespace ZLGetCert.ViewModels
         }
 
         /// <summary>
+        /// Certificate Authority server
+        /// </summary>
+        public string CAServer
+        {
+            get => _caServer;
+            set
+            {
+                if (SetProperty(ref _caServer, value))
+                {
+                    OnPropertyChanged(nameof(CanGenerate));
+                    // Refresh templates when CA server changes
+                    RefreshTemplates();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Certificate template
+        /// </summary>
+        public string Template
+        {
+            get => _template;
+            set
+            {
+                SetProperty(ref _template, value);
+                OnPropertyChanged(nameof(CanGenerate));
+            }
+        }
+
+        /// <summary>
         /// Type of certificate request
         /// </summary>
         public CertificateType Type
@@ -171,6 +213,15 @@ namespace ZLGetCert.ViewModels
         {
             get => _extractPemKey;
             set => SetProperty(ref _extractPemKey, value);
+        }
+
+        /// <summary>
+        /// Whether to extract CA bundle (intermediate + root certificates)
+        /// </summary>
+        public bool ExtractCaBundle
+        {
+            get => _extractCaBundle;
+            set => SetProperty(ref _extractCaBundle, value);
         }
 
         /// <summary>
@@ -229,6 +280,16 @@ namespace ZLGetCert.ViewModels
         public ObservableCollection<SanEntry> IpSans { get; }
 
         /// <summary>
+        /// Available certificate templates from CA
+        /// </summary>
+        public List<CertificateTemplate> AvailableTemplates { get; set; }
+
+        /// <summary>
+        /// Available Certificate Authority servers from Active Directory
+        /// </summary>
+        public List<string> AvailableCAs { get; set; }
+
+        /// <summary>
         /// Whether this is a wildcard certificate request
         /// </summary>
         public bool IsWildcard => Type == CertificateType.Wildcard;
@@ -285,6 +346,10 @@ namespace ZLGetCert.ViewModels
         {
             get
             {
+                // CA Server and Template are required for all certificate types
+                if (string.IsNullOrWhiteSpace(CAServer) || string.IsNullOrWhiteSpace(Template))
+                    return false;
+
                 if (Type == CertificateType.FromCSR)
                 {
                     return !string.IsNullOrWhiteSpace(CsrFilePath) && 
@@ -409,9 +474,12 @@ namespace ZLGetCert.ViewModels
                 State = State,
                 Company = Company,
                 OU = OU,
+                CAServer = CAServer,
+                Template = Template,
                 Type = Type,
                 CsrFilePath = CsrFilePath,
                 ExtractPemKey = ExtractPemKey,
+                ExtractCaBundle = ExtractCaBundle,
                 PfxPassword = SecureStringHelper.StringToSecureString(PfxPassword),
                 ConfirmPassword = !string.IsNullOrEmpty(ConfirmPassword)
             };
@@ -482,6 +550,32 @@ namespace ZLGetCert.ViewModels
         private void ToggleConfirmPasswordVisibility()
         {
             ShowConfirmPassword = !ShowConfirmPassword;
+        }
+
+        /// <summary>
+        /// Refresh available templates from the selected CA server
+        /// </summary>
+        private void RefreshTemplates()
+        {
+            if (string.IsNullOrWhiteSpace(CAServer))
+            {
+                AvailableTemplates = new List<CertificateTemplate>();
+                OnPropertyChanged(nameof(AvailableTemplates));
+                return;
+            }
+
+            try
+            {
+                var templates = _certificateService.GetAvailableTemplates(CAServer);
+                AvailableTemplates = templates;
+                OnPropertyChanged(nameof(AvailableTemplates));
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't crash the UI
+                AvailableTemplates = new List<CertificateTemplate>();
+                OnPropertyChanged(nameof(AvailableTemplates));
+            }
         }
     }
 }

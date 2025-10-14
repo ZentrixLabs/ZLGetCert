@@ -18,7 +18,7 @@ namespace ZLGetCert.ViewModels
         private readonly CertificateService _certificateService;
         private readonly LoggingService _logger;
         private readonly ConfigurationService _configService;
-        private readonly OpenSSLService _openSSLService;
+        private readonly PemExportService _pemExportService;
         private readonly FileManagementService _fileService;
 
         private CertificateRequestViewModel _certificateRequest;
@@ -33,7 +33,7 @@ namespace ZLGetCert.ViewModels
             _certificateService = CertificateService.Instance;
             _logger = LoggingService.Instance;
             _configService = ConfigurationService.Instance;
-            _openSSLService = OpenSSLService.Instance;
+            _pemExportService = PemExportService.Instance;
             _fileService = FileManagementService.Instance;
 
             // Initialize ViewModels
@@ -122,11 +122,9 @@ namespace ZLGetCert.ViewModels
         }
 
         /// <summary>
-        /// OpenSSL availability status
+        /// PEM/KEY export availability status (now always available using pure .NET)
         /// </summary>
-        public string OpenSSLStatus => _openSSLService.IsAvailable ? 
-            $"OpenSSL Available - {_openSSLService.GetConfig().DisplayStatus}" : 
-            "OpenSSL Not Available - PEM/KEY extraction disabled";
+        public string OpenSSLStatus => "PEM/KEY extraction available (built-in .NET)";
 
         /// <summary>
         /// Generate certificate command
@@ -187,10 +185,25 @@ namespace ZLGetCert.ViewModels
             {
                 var config = _configService.GetConfiguration();
                 
-                // Update certificate request with default values
+                // Update certificate request with default values from configuration
                 CertificateRequest.Company = config.CertificateAuthority.DefaultCompany;
                 CertificateRequest.OU = config.CertificateAuthority.DefaultOU;
-                CertificateRequest.ExtractPemKey = _openSSLService.IsAvailable;
+                CertificateRequest.CAServer = config.CertificateAuthority.Server;
+                CertificateRequest.Template = config.CertificateAuthority.Template;
+                CertificateRequest.ExtractPemKey = true; // Always available with pure .NET implementation
+
+                // Load available CAs from Active Directory
+                var availableCAs = _certificateService.GetAvailableCAs();
+                CertificateRequest.AvailableCAs = availableCAs;
+
+                // Load available templates from CA if server is configured
+                if (!string.IsNullOrEmpty(config.CertificateAuthority.Server))
+                {
+                    var templates = _certificateService.GetAvailableTemplates(config.CertificateAuthority.Server);
+                    CertificateRequest.AvailableTemplates = templates;
+                }
+                
+                OnPropertyChanged(nameof(CertificateRequest));
 
                 // Update settings
                 Settings.LoadConfiguration(config);

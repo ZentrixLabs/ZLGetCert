@@ -17,9 +17,12 @@ namespace ZLGetCert.Models
         private string _state;
         private string _company;
         private string _ou;
+        private string _caServer;
+        private string _template;
         private CertificateType _type;
         private string _csrFilePath;
         private bool _extractPemKey;
+        private bool _extractCaBundle;
         private bool _confirmPassword;
         private List<SanEntry> _dnsSans;
         private List<SanEntry> _ipSans;
@@ -115,6 +118,32 @@ namespace ZLGetCert.Models
         }
 
         /// <summary>
+        /// Certificate Authority server
+        /// </summary>
+        public string CAServer
+        {
+            get => _caServer;
+            set
+            {
+                _caServer = value;
+                OnPropertyChanged(nameof(CAServer));
+            }
+        }
+
+        /// <summary>
+        /// Certificate template name
+        /// </summary>
+        public string Template
+        {
+            get => _template;
+            set
+            {
+                _template = value;
+                OnPropertyChanged(nameof(Template));
+            }
+        }
+
+        /// <summary>
         /// Type of certificate request
         /// </summary>
         public CertificateType Type
@@ -152,6 +181,19 @@ namespace ZLGetCert.Models
             {
                 _extractPemKey = value;
                 OnPropertyChanged(nameof(ExtractPemKey));
+            }
+        }
+
+        /// <summary>
+        /// Whether to extract CA bundle (intermediate + root certificates)
+        /// </summary>
+        public bool ExtractCaBundle
+        {
+            get => _extractCaBundle;
+            set
+            {
+                _extractCaBundle = value;
+                OnPropertyChanged(nameof(ExtractCaBundle));
             }
         }
 

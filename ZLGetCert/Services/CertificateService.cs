@@ -22,13 +22,206 @@ namespace ZLGetCert.Services
 
         private readonly LoggingService _logger;
         private readonly ConfigurationService _configService;
-        private readonly OpenSSLService _openSSLService;
+        private readonly PemExportService _pemExportService;
 
         private CertificateService()
         {
             _logger = LoggingService.Instance;
             _configService = ConfigurationService.Instance;
-            _openSSLService = OpenSSLService.Instance;
+            _pemExportService = PemExportService.Instance;
+        }
+
+        /// <summary>
+        /// Get available Certificate Authorities from Active Directory
+        /// </summary>
+        public List<string> GetAvailableCAs()
+        {
+            var caList = new List<string>();
+
+            try
+            {
+                _logger.LogInfo("Querying available CAs from Active Directory");
+
+                // Try certutil -dump first (shows CA servers)
+                var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "certutil.exe",
+                        Arguments = "-dump",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true
+                    }
+                };
+
+                process.Start();
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                process.WaitForExit(30000); // 30 second timeout
+
+                if (process.ExitCode == 0)
+                {
+                    // Parse the output for CA server names
+                    caList = ParseCADumpOutput(output);
+                }
+                else
+                {
+                    _logger.LogWarning("certutil -dump failed, trying alternative method");
+                    // Fallback to -ADCA if -dump doesn't work
+                    caList = GetCAsFromADCA();
+                }
+                
+                _logger.LogInfo("Found {0} available CA(s)", caList.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error querying Certificate Authorities");
+            }
+
+            return caList;
+        }
+
+        /// <summary>
+        /// Fallback method using certutil -ADCA
+        /// </summary>
+        private List<string> GetCAsFromADCA()
+        {
+            var caList = new List<string>();
+
+            try
+            {
+                var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "certutil.exe",
+                        Arguments = "-ADCA",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        CreateNoWindow = true
+                    }
+                };
+
+                process.Start();
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                process.WaitForExit(30000);
+
+                if (process.ExitCode == 0)
+                {
+                    caList = ParseCAOutput(output);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in fallback CA query");
+            }
+
+            return caList;
+        }
+
+        /// <summary>
+        /// Parse certutil -dump output to extract CA server names
+        /// </summary>
+        private List<string> ParseCADumpOutput(string output)
+        {
+            var caList = new List<string>();
+
+            try
+            {
+                // Split output into lines
+                var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                
+                foreach (var line in lines)
+                {
+                    var trimmedLine = line.Trim();
+
+                    // Look for lines that contain "Server:" field
+                    if (trimmedLine.StartsWith("Server:"))
+                    {
+                        // Extract server name after "Server:"
+                        var serverName = trimmedLine.Substring(7).Trim(); // Remove "Server:" prefix
+                        serverName = serverName.Trim('"'); // Remove quotes if present
+                        
+                        if (!string.IsNullOrWhiteSpace(serverName) && 
+                            !caList.Contains(serverName))
+                        {
+                            caList.Add(serverName);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error parsing CA dump output");
+            }
+
+            return caList;
+        }
+
+        /// <summary>
+        /// Parse certutil -ADCA output to extract CA names
+        /// </summary>
+        private List<string> ParseCAOutput(string output)
+        {
+            var caList = new List<string>();
+
+            try
+            {
+                // Split output into lines
+                var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                
+                foreach (var line in lines)
+                {
+                    var trimmedLine = line.Trim();
+
+                    // Look for lines that contain CA server information
+                    // Format is typically: ServerName\CAName or ServerName
+                    if (trimmedLine.Contains("\\"))
+                    {
+                        // Extract just the server name (before the backslash)
+                        var parts = trimmedLine.Split('\\');
+                        if (parts.Length > 0)
+                        {
+                            var serverName = parts[0].Trim();
+                            // Remove any leading markers or special characters
+                            serverName = serverName.TrimStart('*', ' ', '\t', '>', '-');
+                            
+                            if (!string.IsNullOrWhiteSpace(serverName) && 
+                                !serverName.StartsWith("=") && 
+                                !serverName.StartsWith("-") &&
+                                !serverName.StartsWith("Allow") && // Skip permission lines
+                                !serverName.StartsWith("NT AUTHORITY") && // Skip permission lines
+                                !serverName.StartsWith("MPMATERIALS") && // Skip permission lines
+                                !caList.Contains(serverName))
+                            {
+                                caList.Add(serverName);
+                            }
+                        }
+                    }
+                    // Also look for standalone server names (without backslash)
+                    else if (!trimmedLine.StartsWith("Allow") && 
+                             !trimmedLine.StartsWith("NT AUTHORITY") && 
+                             !trimmedLine.StartsWith("MPMATERIALS") &&
+                             !trimmedLine.StartsWith("=") && 
+                             !trimmedLine.StartsWith("-") &&
+                             !trimmedLine.StartsWith("*") &&
+                             trimmedLine.Length > 3 && // Reasonable server name length
+                             !caList.Contains(trimmedLine))
+                    {
+                        caList.Add(trimmedLine);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error parsing CA output");
+            }
+
+            return caList;
         }
 
         /// <summary>
@@ -260,7 +453,7 @@ namespace ZLGetCert.Services
             }
 
             // Submit to CA
-            if (!SubmitToCA(filePaths.CsrPath, filePaths.CerPath, filePaths.PfxPath, config))
+            if (!SubmitToCA(filePaths.CsrPath, filePaths.CerPath, filePaths.PfxPath, request.CAServer))
             {
                 return new CertificateInfo { IsValid = false, ErrorMessage = "Failed to submit to CA" };
             }
@@ -287,7 +480,7 @@ namespace ZLGetCert.Services
             }
 
             // Submit to CA
-            if (!SubmitToCA(filePaths.CsrPath, filePaths.CerPath, filePaths.PfxPath, config))
+            if (!SubmitToCA(filePaths.CsrPath, filePaths.CerPath, filePaths.PfxPath, request.CAServer))
             {
                 return new CertificateInfo { IsValid = false, ErrorMessage = "Failed to submit to CA" };
             }
@@ -309,7 +502,7 @@ namespace ZLGetCert.Services
             }
 
             // Submit existing CSR to CA
-            if (!SubmitToCA(request.CsrFilePath, filePaths.CerPath, filePaths.PfxPath, config))
+            if (!SubmitToCA(request.CsrFilePath, filePaths.CerPath, filePaths.PfxPath, request.CAServer))
             {
                 return new CertificateInfo { IsValid = false, ErrorMessage = "Failed to submit CSR to CA" };
             }
@@ -364,7 +557,7 @@ namespace ZLGetCert.Services
 
             sb.AppendLine();
             sb.AppendLine("[RequestAttributes]");
-            sb.AppendLine($"CertificateTemplate= {config.CertificateAuthority.Template}");
+            sb.AppendLine($"CertificateTemplate= {request.Template}");
 
             return sb.ToString();
         }
@@ -403,7 +596,7 @@ namespace ZLGetCert.Services
             sb.AppendLine($"_continue_ = \"dns={request.FQDN}\"");
             sb.AppendLine();
             sb.AppendLine("[RequestAttributes]");
-            sb.AppendLine($"CertificateTemplate={config.CertificateAuthority.Template}");
+            sb.AppendLine($"CertificateTemplate={request.Template}");
 
             return sb.ToString();
         }
@@ -452,11 +645,11 @@ namespace ZLGetCert.Services
         /// <summary>
         /// Submit CSR to CA
         /// </summary>
-        private bool SubmitToCA(string csrPath, string cerPath, string pfxPath, AppConfiguration config)
+        private bool SubmitToCA(string csrPath, string cerPath, string pfxPath, string caServer)
         {
             try
             {
-                var caConfig = $"{config.CertificateAuthority.Server}\\{config.CertificateAuthority.Server.Split('.')[0].ToUpper()}";
+                var caConfig = $"{caServer}\\{caServer.Split('.')[0].ToUpper()}";
                 var process = new Process
                 {
                     StartInfo = new ProcessStartInfo
@@ -638,26 +831,23 @@ namespace ZLGetCert.Services
         }
 
         /// <summary>
-        /// Extract PEM and KEY files
+        /// Extract PEM and KEY files using pure .NET implementation
         /// </summary>
         private void ExtractPemAndKeyFiles(CertificateInfo certInfo, Models.CertificateRequest request)
         {
-            if (!_openSSLService.IsAvailable)
-            {
-                _logger.LogWarning("OpenSSL not available, skipping PEM/KEY extraction");
-                return;
-            }
-
             var config = _configService.GetConfiguration();
             var password = GetPasswordFromSecureString(request.PfxPassword);
 
-            if (_openSSLService.ExtractPemAndKey(certInfo.PfxPath, password, config.FilePaths.CertificateFolder, request.CertificateName))
+            if (_pemExportService.ExtractPemAndKey(certInfo.PfxPath, password, config.FilePaths.CertificateFolder, request.CertificateName))
             {
                 certInfo.PemPath = Path.Combine(config.FilePaths.CertificateFolder, $"{request.CertificateName}.pem");
                 certInfo.KeyPath = Path.Combine(config.FilePaths.CertificateFolder, $"{request.CertificateName}.key");
 
-                // Extract certificate chain
-                _openSSLService.ExtractCertificateChain(certInfo.PfxPath, password, config.FilePaths.CertificateFolder, "certificate-chain");
+                // Extract certificate chain (CA bundle) if requested
+                if (request.ExtractCaBundle)
+                {
+                    _pemExportService.ExtractCertificateChain(certInfo.PfxPath, password, config.FilePaths.CertificateFolder, "ca-bundle");
+                }
             }
         }
 
