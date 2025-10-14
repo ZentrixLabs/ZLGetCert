@@ -1,6 +1,8 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Security;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using ZLGetCert.Models;
 using ZLGetCert.Services;
@@ -47,6 +49,8 @@ namespace ZLGetCert.ViewModels
             AddIpSanCommand = new RelayCommand(AddIpSan);
             RemoveDnsSanCommand = new RelayCommand<SanEntry>(RemoveDnsSan);
             RemoveIpSanCommand = new RelayCommand<SanEntry>(RemoveIpSan);
+            BulkAddDnsSansCommand = new RelayCommand(BulkAddDnsSans);
+            BulkAddIpSansCommand = new RelayCommand(BulkAddIpSans);
             OpenConfigurationEditorCommand = new RelayCommand(OpenConfigurationEditor);
             OpenUsersGuideCommand = new RelayCommand(OpenUsersGuide);
             SaveAsDefaultsCommand = new RelayCommand(SaveAsDefaults);
@@ -152,6 +156,16 @@ namespace ZLGetCert.ViewModels
         /// Remove IP SAN command
         /// </summary>
         public ICommand RemoveIpSanCommand { get; }
+
+        /// <summary>
+        /// Bulk add DNS SANs command
+        /// </summary>
+        public ICommand BulkAddDnsSansCommand { get; }
+
+        /// <summary>
+        /// Bulk add IP SANs command
+        /// </summary>
+        public ICommand BulkAddIpSansCommand { get; }
 
         /// <summary>
         /// Open configuration editor command
@@ -373,6 +387,174 @@ namespace ZLGetCert.ViewModels
         private void RemoveIpSan(SanEntry entry)
         {
             CertificateRequest.RemoveIpSan(entry);
+        }
+
+        /// <summary>
+        /// Bulk add DNS SANs from multiline input
+        /// </summary>
+        private void BulkAddDnsSans()
+        {
+            try
+            {
+                // Create input dialog
+                var inputWindow = new Window
+                {
+                    Title = "Bulk Add DNS SANs",
+                    Width = 500,
+                    Height = 400,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    Owner = System.Windows.Application.Current.MainWindow
+                };
+
+                var grid = new Grid();
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
+
+                var label = new TextBlock
+                {
+                    Text = "Enter DNS names (one per line):",
+                    Margin = new Thickness(10)
+                };
+                Grid.SetRow(label, 0);
+                grid.Children.Add(label);
+
+                var textBox = new TextBox
+                {
+                    Margin = new Thickness(10, 0, 10, 10),
+                    AcceptsReturn = true,
+                    TextWrapping = TextWrapping.Wrap,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+                };
+                Grid.SetRow(textBox, 1);
+                grid.Children.Add(textBox);
+
+                var buttonPanel = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Margin = new Thickness(10)
+                };
+
+                var addButton = new Button
+                {
+                    Content = "Add All",
+                    Width = 80,
+                    Margin = new Thickness(0, 0, 10, 0),
+                    IsDefault = true
+                };
+                addButton.Click += (s, e) => { inputWindow.DialogResult = true; inputWindow.Close(); };
+
+                var cancelButton = new Button
+                {
+                    Content = "Cancel",
+                    Width = 80,
+                    IsCancel = true
+                };
+
+                buttonPanel.Children.Add(addButton);
+                buttonPanel.Children.Add(cancelButton);
+                Grid.SetRow(buttonPanel, 2);
+                grid.Children.Add(buttonPanel);
+
+                inputWindow.Content = grid;
+
+                if (inputWindow.ShowDialog() == true)
+                {
+                    var count = CertificateRequest.BulkAddDnsSans(textBox.Text);
+                    StatusMessage = $"Added {count} DNS SAN(s)";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error bulk adding DNS SANs");
+                System.Windows.MessageBox.Show($"Error adding DNS SANs: {ex.Message}",
+                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Bulk add IP SANs from multiline input
+        /// </summary>
+        private void BulkAddIpSans()
+        {
+            try
+            {
+                // Create input dialog
+                var inputWindow = new Window
+                {
+                    Title = "Bulk Add IP SANs",
+                    Width = 500,
+                    Height = 400,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    Owner = System.Windows.Application.Current.MainWindow
+                };
+
+                var grid = new Grid();
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
+
+                var label = new TextBlock
+                {
+                    Text = "Enter IP addresses (one per line):",
+                    Margin = new Thickness(10)
+                };
+                Grid.SetRow(label, 0);
+                grid.Children.Add(label);
+
+                var textBox = new TextBox
+                {
+                    Margin = new Thickness(10, 0, 10, 10),
+                    AcceptsReturn = true,
+                    TextWrapping = TextWrapping.Wrap,
+                    VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+                };
+                Grid.SetRow(textBox, 1);
+                grid.Children.Add(textBox);
+
+                var buttonPanel = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Margin = new Thickness(10)
+                };
+
+                var addButton = new Button
+                {
+                    Content = "Add All",
+                    Width = 80,
+                    Margin = new Thickness(0, 0, 10, 0),
+                    IsDefault = true
+                };
+                addButton.Click += (s, e) => { inputWindow.DialogResult = true; inputWindow.Close(); };
+
+                var cancelButton = new Button
+                {
+                    Content = "Cancel",
+                    Width = 80,
+                    IsCancel = true
+                };
+
+                buttonPanel.Children.Add(addButton);
+                buttonPanel.Children.Add(cancelButton);
+                Grid.SetRow(buttonPanel, 2);
+                grid.Children.Add(buttonPanel);
+
+                inputWindow.Content = grid;
+
+                if (inputWindow.ShowDialog() == true)
+                {
+                    var count = CertificateRequest.BulkAddIpSans(textBox.Text);
+                    StatusMessage = $"Added {count} IP SAN(s)";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error bulk adding IP SANs");
+                System.Windows.MessageBox.Show($"Error adding IP SANs: {ex.Message}",
+                    "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
         }
 
         /// <summary>

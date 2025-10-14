@@ -619,10 +619,16 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <Button Content="➕ Add DNS Name" 
-                                        Command="{Binding AddDnsSanCommand}"
-                                        Style="{StaticResource SecondaryButtonStyle}"
-                                        Margin="0,5,0,0"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                    <Button Content="➕ Add DNS Name" 
+                                            Command="{Binding AddDnsSanCommand}"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            Margin="0,0,10,0"/>
+                                    <Button Content="📝 Add Multiple" 
+                                            Command="{Binding BulkAddDnsSansCommand}"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            ToolTip="Add multiple DNS names at once (one per line)"/>
+                                </StackPanel>
                             </StackPanel>
 
                             <!-- IP SANs -->
@@ -648,10 +654,16 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <Button Content="➕ Add IP Address" 
-                                        Command="{Binding AddIpSanCommand}"
-                                        Style="{StaticResource SecondaryButtonStyle}"
-                                        Margin="0,5,0,0"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                    <Button Content="➕ Add IP Address" 
+                                            Command="{Binding AddIpSanCommand}"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            Margin="0,0,10,0"/>
+                                    <Button Content="📝 Add Multiple" 
+                                            Command="{Binding BulkAddIpSansCommand}"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            ToolTip="Add multiple IP addresses at once (one per line)"/>
+                                </StackPanel>
                             </StackPanel>
                         </StackPanel>
                     </Border>

@@ -896,6 +896,66 @@ namespace ZLGetCert.ViewModels
         }
 
         /// <summary>
+        /// Bulk add DNS SANs from multiline text input
+        /// </summary>
+        /// <param name="multilineText">Text with one DNS name per line</param>
+        /// <returns>Number of SANs added</returns>
+        public int BulkAddDnsSans(string multilineText)
+        {
+            if (string.IsNullOrWhiteSpace(multilineText))
+                return 0;
+
+            var lines = multilineText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            int addedCount = 0;
+
+            foreach (var line in lines)
+            {
+                var trimmed = line.Trim();
+                if (!string.IsNullOrWhiteSpace(trimmed))
+                {
+                    // Validate DNS name format
+                    if (ValidationHelper.IsValidDnsName(trimmed) || trimmed.StartsWith("*."))
+                    {
+                        DnsSans.Add(new SanEntry { Type = SanType.DNS, Value = trimmed });
+                        addedCount++;
+                    }
+                }
+            }
+
+            return addedCount;
+        }
+
+        /// <summary>
+        /// Bulk add IP SANs from multiline text input
+        /// </summary>
+        /// <param name="multilineText">Text with one IP address per line</param>
+        /// <returns>Number of SANs added</returns>
+        public int BulkAddIpSans(string multilineText)
+        {
+            if (string.IsNullOrWhiteSpace(multilineText))
+                return 0;
+
+            var lines = multilineText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            int addedCount = 0;
+
+            foreach (var line in lines)
+            {
+                var trimmed = line.Trim();
+                if (!string.IsNullOrWhiteSpace(trimmed))
+                {
+                    // Validate IP address format
+                    if (ValidationHelper.IsValidIpAddress(trimmed))
+                    {
+                        IpSans.Add(new SanEntry { Type = SanType.IP, Value = trimmed });
+                        addedCount++;
+                    }
+                }
+            }
+
+            return addedCount;
+        }
+
+        /// <summary>
         /// Clear the form
         /// </summary>
         public void Clear()
