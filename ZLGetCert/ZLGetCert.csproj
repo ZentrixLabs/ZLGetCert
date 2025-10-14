@@ -16,9 +16,9 @@
     <Deterministic>true</Deterministic>
     <LangVersion>10.0</LangVersion>
     <ApplicationIcon>ZLGetCert_icon_v2.ico</ApplicationIcon>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
-    <InformationalVersion>1.0.0</InformationalVersion>
+    <AssemblyVersion>1.5.0.0</AssemblyVersion>
+    <FileVersion>1.5.0.0</FileVersion>
+    <InformationalVersion>1.5.0</InformationalVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -176,6 +176,7 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Styles\CommonStyles.xaml" />
+    <Resource Include="Styles\FontAwesomeIcons.xaml" />
   </ItemGroup>
   <ItemGroup>
     <None Include="appsettings.json">
@@ -195,6 +196,8 @@
     <Resource Include="ZLGetCert_icon_v2.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Resource>
+    <Resource Include="Fonts\FontAwesome-Solid.otf" />
+    <Resource Include="Fonts\FontAwesome-Regular.otf" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

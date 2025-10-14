@@ -97,10 +97,25 @@
                                Style="{StaticResource StatusTextStyle}" Foreground="#D8DEE9"/>
                 </StackPanel>
                 
-                <!-- Quick Actions -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <!-- Settings moved to Edit menu - no header button needed -->
-                </StackPanel>
+                <!-- Branding Logo -->
+                <Border Grid.Column="1" 
+                        BorderBrush="White" 
+                        BorderThickness="2" 
+                        CornerRadius="12" 
+                        Padding="6"
+                        VerticalAlignment="Center">
+                    <Border.Effect>
+                        <DropShadowEffect Color="Black" 
+                                          Direction="315" 
+                                          ShadowDepth="2" 
+                                          Opacity="0.2" 
+                                          BlurRadius="6"/>
+                    </Border.Effect>
+                    <Image Source="pack://application:,,,/ZLGetCert_icon_v2_1024.png" 
+                           Width="56" 
+                           Height="56" 
+                           Stretch="Uniform"/>
+                </Border>
             </Grid>
         </Border>
 
@@ -118,7 +133,12 @@
                                    Margin="0,0,0,10">
                             <Hyperlink Command="{Binding OpenUsersGuideCommand}" 
                                        TextDecorations="None">
-                                <Run Text="❓ Click Here for Help" 
+                                <TextBlock Style="{StaticResource FontAwesomeIconStyle}" 
+                                           Text="{StaticResource Icon.Question}" 
+                                           FontSize="14" 
+                                           Foreground="#007ACC"
+                                           Margin="0,0,5,0"/>
+                                <Run Text="Click Here for Help" 
                                      FontSize="14" 
                                      Foreground="#007ACC"/>
                             </Hyperlink>
@@ -132,15 +152,19 @@
                             
                             <!-- Option 1: Import Existing CSR (Quick Path) -->
                             <StackPanel>
-                                <Button Content="📄 Import &amp; Sign CSR File..." 
-                                        Command="{Binding CertificateRequest.ImportFromCSRCommand}"
+                                <Button Command="{Binding CertificateRequest.ImportFromCSRCommand}"
                                         Style="{StaticResource PrimaryButtonStyle}"
                                         ToolTip="Submit an existing Certificate Signing Request file to the CA (Alt+I)"
                                         FontSize="14"
                                         Padding="20,10"
                                         FontWeight="SemiBold"
                                         HorizontalAlignment="Stretch"
-                                        Margin="0,0,0,5"/>
+                                        Margin="0,0,0,5">
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <TextBlock Text="{StaticResource Icon.Import}" Style="{StaticResource FontAwesomeIconStyle}" Margin="0,0,8,0"/>
+                                        <TextBlock Text="Import &amp; Sign CSR File..." VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
                                 <TextBlock Text="Already have a .csr file? Click here to skip the form below" 
                                            FontSize="11"
                                            Foreground="#666666"
@@ -183,13 +207,17 @@
                                     BorderThickness="0,1,0,0" 
                                     Margin="0,15,0,10"/>
                             
-                            <Button Content="💾 Save as Defaults" 
-                                    Command="{Binding SaveAsDefaultsCommand}"
+                            <Button Command="{Binding SaveAsDefaultsCommand}"
                                     Style="{StaticResource SecondaryButtonStyle}"
                                     ToolTip="Save current CA server, template, and organization settings as defaults (Alt+D)"
                                     HorizontalAlignment="Left"
                                     Padding="12,6"
-                                    FontSize="12"/>
+                                    FontSize="12">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{StaticResource Icon.Save}" Style="{StaticResource FontAwesomeIconSmallStyle}" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Save as Defaults" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </Border>
                     
@@ -323,10 +351,12 @@
                             Visibility="{Binding CertificateRequest.IsCSRWorkflow, Converter={StaticResource BoolToVisibilityConverter}}">
                         <StackPanel>
                             <TextBlock Text="CSR File Import" Style="{StaticResource SectionHeaderStyle}"/>
-                            <TextBlock Text="✅ CSR file loaded - hostname, organization info, and SANs from CSR" 
-                                       Foreground="Green"
+                            <TextBlock Foreground="Green"
                                        FontWeight="SemiBold"
-                                       Margin="0,0,0,10"/>
+                                       Margin="0,0,0,10">
+                                <TextBlock Text="{StaticResource Icon.CheckCircle}" Style="{StaticResource FontAwesomeIconStyle}" Foreground="Green" FontSize="12"/>
+                                <Run Text=" CSR file loaded - hostname, organization info, and SANs from CSR"/>
+                            </TextBlock>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -337,14 +367,20 @@
                                          IsReadOnly="True"
                                          Margin="0,0,10,0"/>
                                 <Button Grid.Column="1" 
-                                        Content="❌ Clear" 
                                         Click="ClearCSR_Click"
-                                        Style="{StaticResource SecondaryButtonStyle}"/>
+                                        Style="{StaticResource SecondaryButtonStyle}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{StaticResource Icon.Xmark}" Style="{StaticResource FontAwesomeIconSmallStyle}" Margin="0,0,5,0"/>
+                                        <TextBlock Text="Clear" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
                             </Grid>
-                            <TextBlock Text="ℹ️ The CSR file already contains subject DN and SANs. You only need to select the CA server, template, and password." 
-                                       Style="{StaticResource StatusTextStyle}"
+                            <TextBlock Style="{StaticResource StatusTextStyle}"
                                        TextWrapping="Wrap"
-                                       Margin="0,10,0,0"/>
+                                       Margin="0,10,0,0">
+                                <TextBlock Text="{StaticResource Icon.Info}" Style="{StaticResource FontAwesomeIconSmallStyle}" Foreground="#6B7280" FontSize="11"/>
+                                <Run Text=" The CSR file already contains subject DN and SANs. You only need to select the CA server, template, and password."/>
+                            </TextBlock>
                         </StackPanel>
                     </Border>
 
@@ -570,11 +606,13 @@
                                     Padding="12"
                                     Margin="0,15,0,0">
                                 <StackPanel>
-                                    <TextBlock Text="📋 Certificate Subject Preview" 
-                                               FontWeight="SemiBold" 
+                                    <TextBlock FontWeight="SemiBold" 
                                                FontSize="12"
                                                Foreground="#333333"
-                                               Margin="0,0,0,5"/>
+                                               Margin="0,0,0,5">
+                                        <TextBlock Text="{StaticResource Icon.FileLines}" Style="{StaticResource FontAwesomeIconSmallStyle}" Foreground="#333333" FontSize="11" Margin="0,0,5,0"/>
+                                        <Run Text="Certificate Subject Preview"/>
+                                    </TextBlock>
                                     <TextBlock Text="{Binding CertificateRequest.CertificateSubjectPreview}"
                                                FontSize="11"
                                                FontFamily="Consolas, Courier New"
@@ -611,23 +649,32 @@
                                                          Text="{Binding Value}" 
                                                          Margin="0,0,10,0"/>
                                                 <Button Grid.Column="1" 
-                                                        Content="❌" 
                                                         Command="{Binding DataContext.RemoveDnsSanCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                         CommandParameter="{Binding}"
-                                                        Style="{StaticResource IconButtonStyle}"/>
+                                                        Style="{StaticResource IconButtonStyle}">
+                                                    <TextBlock Text="{StaticResource Icon.Xmark}" Style="{StaticResource FontAwesomeIconSmallStyle}"/>
+                                                </Button>
                                             </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                                 <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                    <Button Content="➕ Add DNS Name" 
-                                            Command="{Binding AddDnsSanCommand}"
+                                    <Button Command="{Binding AddDnsSanCommand}"
                                             Style="{StaticResource SecondaryButtonStyle}"
-                                            Margin="0,0,10,0"/>
-                                    <Button Content="📝 Add Multiple" 
-                                            Command="{Binding BulkAddDnsSansCommand}"
+                                            Margin="0,0,10,0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{StaticResource Icon.Plus}" Style="{StaticResource FontAwesomeIconSmallStyle}" Margin="0,0,5,0"/>
+                                            <TextBlock Text="Add DNS Name" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Command="{Binding BulkAddDnsSansCommand}"
                                             Style="{StaticResource SecondaryButtonStyle}"
-                                            ToolTip="Add multiple DNS names at once (one per line)"/>
+                                            ToolTip="Add multiple DNS names at once (one per line)">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{StaticResource Icon.List}" Style="{StaticResource FontAwesomeIconSmallStyle}" Margin="0,0,5,0"/>
+                                            <TextBlock Text="Add Multiple" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
                                 </StackPanel>
                             </StackPanel>
 
@@ -646,23 +693,32 @@
                                                          Text="{Binding Value}" 
                                                          Margin="0,0,10,0"/>
                                                 <Button Grid.Column="1" 
-                                                        Content="❌" 
                                                         Command="{Binding DataContext.RemoveIpSanCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                         CommandParameter="{Binding}"
-                                                        Style="{StaticResource IconButtonStyle}"/>
+                                                        Style="{StaticResource IconButtonStyle}">
+                                                    <TextBlock Text="{StaticResource Icon.Xmark}" Style="{StaticResource FontAwesomeIconSmallStyle}"/>
+                                                </Button>
                                             </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                                 <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                    <Button Content="➕ Add IP Address" 
-                                            Command="{Binding AddIpSanCommand}"
+                                    <Button Command="{Binding AddIpSanCommand}"
                                             Style="{StaticResource SecondaryButtonStyle}"
-                                            Margin="0,0,10,0"/>
-                                    <Button Content="📝 Add Multiple" 
-                                            Command="{Binding BulkAddIpSansCommand}"
+                                            Margin="0,0,10,0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{StaticResource Icon.Plus}" Style="{StaticResource FontAwesomeIconSmallStyle}" Margin="0,0,5,0"/>
+                                            <TextBlock Text="Add IP Address" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Command="{Binding BulkAddIpSansCommand}"
                                             Style="{StaticResource SecondaryButtonStyle}"
-                                            ToolTip="Add multiple IP addresses at once (one per line)"/>
+                                            ToolTip="Add multiple IP addresses at once (one per line)">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{StaticResource Icon.List}" Style="{StaticResource FontAwesomeIconSmallStyle}" Margin="0,0,5,0"/>
+                                            <TextBlock Text="Add Multiple" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
                                 </StackPanel>
                             </StackPanel>
                         </StackPanel>
@@ -677,12 +733,13 @@
                             <StackPanel Style="{StaticResource FormGroupStyle}">
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                                     <TextBlock Text="PFX Password *" Style="{StaticResource FieldLabelStyle}" Margin="0"/>
-                                    <TextBlock Text="ⓘ" 
-                                               FontSize="14" 
-                                               Foreground="#007ACC" 
-                                               Margin="5,0,0,0"
-                                               ToolTip="This password protects the exported PFX certificate file. You'll need this password to import the certificate on other systems."
-                                               Cursor="Help"/>
+                                <TextBlock Text="{StaticResource Icon.Info}" 
+                                           Style="{StaticResource FontAwesomeIconSmallStyle}"
+                                           FontSize="12" 
+                                           Foreground="#007ACC" 
+                                           Margin="5,0,0,0"
+                                           ToolTip="This password protects the exported PFX certificate file. You'll need this password to import the certificate on other systems."
+                                           Cursor="Help"/>
                                 </StackPanel>
                                 
                                 <Grid>
@@ -714,29 +771,32 @@
                                              Visibility="{Binding CertificateRequest.ShowPassword, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                     
                                     <Button Grid.Column="1" 
-                                            Content="👁" 
                                             Command="{Binding CertificateRequest.TogglePasswordVisibilityCommand}"
                                             Style="{StaticResource IconButtonStyle}"
                                             Width="32"
                                             Height="32"
                                             Margin="0,0,5,0"
-                                            ToolTip="Toggle password visibility"/>
+                                            ToolTip="Toggle password visibility">
+                                        <TextBlock Text="{StaticResource Icon.Eye}" Style="{StaticResource FontAwesomeIconStyle}"/>
+                                    </Button>
                                     
                                     <Button Grid.Column="2" 
-                                            Content="📋" 
                                             Command="{Binding CertificateRequest.CopyPasswordCommand}"
                                             Style="{StaticResource IconButtonStyle}"
                                             Width="32"
                                             Height="32"
                                             Margin="0,0,5,0"
-                                            ToolTip="Copy password to clipboard"/>
+                                            ToolTip="Copy password to clipboard">
+                                        <TextBlock Text="{StaticResource Icon.Clipboard}" Style="{StaticResource FontAwesomeIconStyle}"/>
+                                    </Button>
                                     
                                     <Button Grid.Column="3" 
-                                            Content="🔑" 
                                             Command="{Binding CertificateRequest.GeneratePasswordCommand}"
                                             Style="{StaticResource SecondaryButtonStyle}"
                                             Padding="8,4"
-                                            ToolTip="Generate strong password"/>
+                                            ToolTip="Generate strong password">
+                                        <TextBlock Text="{StaticResource Icon.Key}" Style="{StaticResource FontAwesomeIconStyle}"/>
+                                    </Button>
                                 </Grid>
                                 
                                 <!-- Password Strength Meter -->
@@ -854,12 +914,13 @@
                                     </TextBox>
                                     
                                     <Button Grid.Column="1" 
-                                            Content="👁" 
                                             Command="{Binding CertificateRequest.ToggleConfirmPasswordVisibilityCommand}"
                                             Style="{StaticResource IconButtonStyle}"
                                             Width="32"
                                             Height="32"
-                                            ToolTip="Toggle password visibility"/>
+                                            ToolTip="Toggle password visibility">
+                                        <TextBlock Text="{StaticResource Icon.Eye}" Style="{StaticResource FontAwesomeIconStyle}"/>
+                                    </Button>
                                 </Grid>
                                 <TextBlock Text="{Binding CertificateRequest.ConfirmPasswordError}" 
                                            FontSize="11"
@@ -888,7 +949,7 @@
                                             BorderBrush="#FFC107"
                                             Margin="0,0,0,5">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="⚠️" FontSize="12" Margin="0,0,5,0"/>
+                                            <TextBlock Text="{StaticResource Icon.Warning}" Style="{StaticResource FontAwesomeIconSmallStyle}" FontSize="12" Margin="0,0,5,0" Foreground="#856404"/>
                                             <TextBlock Text="Unencrypted key file - Click for security info" 
                                                        FontSize="11" 
                                                        Foreground="#856404"
@@ -977,11 +1038,11 @@
                             <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
-                                        <Setter Property="Text" Value="✓ Ready to Generate"/>
+                                        <Setter Property="Text" Value="✓ Ready to Generate"/> <!-- Using checkmark for consistency with existing code -->
                                         <Setter Property="Foreground" Value="#28A745"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding CertificateRequest.HasValidationErrors}" Value="True">
-                                                <Setter Property="Text" Value="⚠ Cannot Generate Certificate"/>
+                                                <Setter Property="Text" Value="⚠ Cannot Generate Certificate"/> <!-- Using warning triangle for consistency -->
                                                 <Setter Property="Foreground" Value="#DC3545"/>
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -1014,8 +1075,7 @@
                                        Style="{StaticResource SectionHeaderStyle}"
                                        Foreground="#28A745"/>
                             
-                            <Button Content="🔧 Generate Certificate" 
-                                    Command="{Binding GenerateCertificateCommand}"
+                            <Button Command="{Binding GenerateCertificateCommand}"
                                     IsEnabled="{Binding CertificateRequest.CanGenerate}"
                                     Style="{StaticResource PrimaryButtonStyle}"
                                     ToolTip="Generate the certificate with the settings above (Alt+G)"
@@ -1023,7 +1083,12 @@
                                     Padding="24,12"
                                     FontWeight="Bold"
                                     HorizontalAlignment="Stretch"
-                                    Margin="0,5,0,5"/>
+                                    Margin="0,5,0,5">
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <TextBlock Text="{StaticResource Icon.Certificate}" Style="{StaticResource FontAwesomeIconLargeStyle}" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Generate Certificate" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
                             
                             <TextBlock FontSize="11" Foreground="#666666" HorizontalAlignment="Center">
                                 <TextBlock.Style>
@@ -1031,7 +1096,7 @@
                                         <Setter Property="Text" Value="Fill out all required fields (*) above to enable this button"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding CertificateRequest.CanGenerate}" Value="True">
-                                                <Setter Property="Text" Value="✓ All required fields complete - click to generate your certificate"/>
+                                                <Setter Property="Text" Value="✓ All required fields complete - click to generate your certificate"/> <!-- Using checkmark for consistency -->
                                                 <Setter Property="Foreground" Value="#28A745"/>
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -1073,14 +1138,18 @@
                 </StackPanel>
                 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button Content="🔐 Generate Certificate" 
-                            Command="{Binding GenerateCertificateCommand}"
+                    <Button Command="{Binding GenerateCertificateCommand}"
                             Style="{StaticResource PrimaryButtonStyle}"
                             IsEnabled="{Binding CertificateRequest.CanGenerate}"
                             Padding="20,10"
                             FontSize="14"
                             FontWeight="SemiBold"
-                            ToolTip="Generate the certificate with the settings above (Alt+G)"/>
+                            ToolTip="Generate the certificate with the settings above (Alt+G)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{StaticResource Icon.Certificate}" Style="{StaticResource FontAwesomeIconStyle}" Margin="0,0,8,0"/>
+                            <TextBlock Text="Generate Certificate" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>

@@ -1,6 +1,11 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+    <!-- Merge Font Awesome Icons -->
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="FontAwesomeIcons.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
+
     <!-- Color Palette -->
     <SolidColorBrush x:Key="PrimaryColor" Color="#3B82F6"/>
     <SolidColorBrush x:Key="SecondaryColor" Color="#6B7280"/>

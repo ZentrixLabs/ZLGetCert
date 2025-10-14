@@ -10,7 +10,7 @@ A modern Windows WPF application that simplifies certificate requests from on-pr
 
 ## Features
 
-- **Modern UI**: Clean, card-based interface with improved UX and visual hierarchy
+- **Modern UI**: Clean, card-based interface with professional Font Awesome icons
 - **Multiple Certificate Types**: Support for Standard, Wildcard, and CSR-based certificates
 - **Configurable Options**: Dynamic hash algorithms and log levels loaded from configuration
 - **Centralized Logging**: Comprehensive logging to `C:\ProgramData\ZentrixLabs\ZLGetCert`
@@ -123,7 +123,7 @@ The application uses `appsettings.json` for configuration. All UI options are dy
 
 ### Getting Started
 1. Launch ZLGetCert
-2. Configure your CA settings using the ⚙️ Settings button
+2. Configure your CA settings using the Settings button
 3. Select your certificate type and fill in the required information
 4. Click "Generate Certificate"
 
@@ -149,7 +149,7 @@ The application uses `appsettings.json` for configuration. All UI options are dy
 4. Submit to CA
 
 ### Settings Configuration
-- Click the ⚙️ Settings button to access configuration
+- Click the Settings button to access configuration
 - Modify CA server settings, file paths, and default values
 - Configure logging options and hash algorithms
 - Settings are saved automatically and applied immediately
@@ -198,6 +198,7 @@ All operations are logged to `C:\ProgramData\ZentrixLabs\ZLGetCert` with:
 - Secure password storage in configuration
 - Password masking in UI and logs
 - Automatic memory cleanup
+- Built-in security warnings for unencrypted key files
 
 ## Deployment in Restricted Environments
 
@@ -239,6 +240,7 @@ ZLGetCert/
 ├── Enums/           # Enumerations (LogLevel, CertificateType)
 ├── Styles/          # XAML styles and templates (CommonStyles.xaml)
 ├── Converters/      # Value converters for data binding
+├── Fonts/           # Font Awesome icon fonts
 └── appsettings.json # Application configuration
 ```
 
@@ -258,6 +260,7 @@ The application uses modern WPF patterns:
 - **Custom Styles**: Consistent theming via CommonStyles.xaml
 - **Card-Based Layout**: Modern UI with visual hierarchy
 - **Configuration-Driven**: All options loaded from appsettings.json
+- **Professional Icons**: Font Awesome 7 Pro icon integration
 
 ### Key Technologies
 - **.NET Framework 4.8**: Target framework (intentionally chosen for legacy system compatibility)
@@ -267,18 +270,17 @@ The application uses modern WPF patterns:
 - **Custom ASN.1/DER Encoder**: Pure .NET PKCS#1 private key encoding
 - **Newtonsoft.Json**: Configuration serialization
 - **NLog**: Logging framework
+- **Font Awesome 7 Pro**: Professional icon library
+
+## Documentation
+
+- **[User Guides](docs/user-guides/)** - Feature-specific documentation and improvements
+- **[Development Docs](docs/development/)** - Technical implementation details and architecture
+- **[Configuration Examples](ZLGetCert/examples/)** - Sample configuration files for different environments
 
 ## Contributing
 
-We welcome contributions! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Add tests for new functionality
-5. Commit your changes (`git commit -m 'Add some amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
 
 ### Development Guidelines
 
@@ -299,12 +301,13 @@ We welcome contributions! Please follow these steps:
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Screenshots
 
 The application features a modern, card-based interface with:
 - Clean visual hierarchy with grouped form sections
+- Professional Font Awesome icons throughout
 - Toggleable settings panel with real-time configuration
 - Visual status indicators and progress tracking
 - Consistent styling across all UI elements
@@ -319,6 +322,7 @@ For issues and questions:
 
 ## Recent Updates
 
+- **Professional Icon Integration**: Font Awesome 7 Pro icons throughout the application
 - **Pure .NET PEM/KEY Export**: Built-in certificate extraction - **zero external dependencies**!
   - Native .NET Framework 4.8 cryptography - no OpenSSL installation needed
   - PKCS#1 RSA private key encoding using custom ASN.1/DER implementation
@@ -333,3 +337,11 @@ For issues and questions:
 - **Users Guide**: Comprehensive documentation with examples and troubleshooting
 - **Visual Improvements**: Enhanced styling, better form grouping, and status indicators
 - **Code Quality**: Removed hardcoded values, improved maintainability
+
+## About
+
+ZLGetCert is developed by [ZentrixLabs](https://zentrixlabs.net/) to simplify certificate management in enterprise and OT environments.
+
+---
+
+© 2025 ZentrixLabs. All rights reserved.
