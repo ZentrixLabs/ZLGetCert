@@ -24,12 +24,14 @@ namespace ZLGetCert.Services
         private readonly LoggingService _logger;
         private readonly ConfigurationService _configService;
         private readonly PemExportService _pemExportService;
+        private readonly AuditService _auditService;
 
         private CertificateService()
         {
             _logger = LoggingService.Instance;
             _configService = ConfigurationService.Instance;
             _pemExportService = PemExportService.Instance;
+            _auditService = AuditService.Instance;
         }
 
         /// <summary>
@@ -480,6 +482,14 @@ namespace ZLGetCert.Services
                 {
                     _logger.LogError("Template/Type validation failed: {0}", 
                         string.Join(", ", validation.Errors));
+                    
+                    // SECURITY AUDIT: Log validation failure
+                    _auditService.LogAuditEvent(
+                        AuditService.AuditEventType.ValidationFailure,
+                        $"Template/Type validation failed: {string.Join(", ", validation.Errors)}. " +
+                        $"Template: {request.Template}, Type: {request.Type}",
+                        certificateName: request.CertificateName);
+                    
                     return new CertificateInfo
                     {
                         IsValid = false,
@@ -522,6 +532,13 @@ namespace ZLGetCert.Services
                 {
                     ExtractPemAndKeyFiles(certificateInfo, request);
                 }
+
+                // SECURITY AUDIT: Log successful certificate generation
+                _auditService.LogAuditEvent(
+                    AuditService.AuditEventType.CertificateGenerated,
+                    $"Certificate generated successfully. Type: {request.Type}, Template: {request.Template}, CA: {request.CAServer}",
+                    certificateName: request.CertificateName,
+                    thumbprint: certificateInfo.Thumbprint);
 
                 _logger.LogInfo("Certificate generation completed successfully for {0}", request.CertificateName);
                 return certificateInfo;

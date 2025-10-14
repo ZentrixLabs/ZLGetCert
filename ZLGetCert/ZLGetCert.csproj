@@ -118,6 +118,7 @@
     <Compile Include="ViewModels\CertificateRequestViewModel.cs" />
     <Compile Include="ViewModels\SettingsViewModel.cs" />
     <Compile Include="ViewModels\BaseViewModel.cs" />
+    <Compile Include="Services\AuditService.cs" />
     <Compile Include="Services\CertificateService.cs" />
     <Compile Include="Services\OpenSSLService.cs" />
     <Compile Include="Services\PemExportService.cs" />

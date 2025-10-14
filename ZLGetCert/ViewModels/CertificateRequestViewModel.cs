@@ -240,8 +240,19 @@ namespace ZLGetCert.ViewModels
         public bool ExtractPemKey
         {
             get => _extractPemKey;
-            set => SetProperty(ref _extractPemKey, value);
+            set
+            {
+                if (SetProperty(ref _extractPemKey, value))
+                {
+                    OnPropertyChanged(nameof(ShowKeySecurityWarning));
+                }
+            }
         }
+
+        /// <summary>
+        /// Whether to show security warning about unencrypted keys
+        /// </summary>
+        public bool ShowKeySecurityWarning => ExtractPemKey;
 
         /// <summary>
         /// Whether to extract CA bundle (intermediate + root certificates)

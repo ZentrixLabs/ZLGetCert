@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Principal;
 using System.Text;
 using System.Runtime.InteropServices;
 
@@ -19,10 +21,12 @@ namespace ZLGetCert.Services
         public static PemExportService Instance => _instance.Value;
 
         private readonly LoggingService _logger;
+        private readonly AuditService _auditService;
 
         private PemExportService()
         {
             _logger = LoggingService.Instance;
+            _auditService = AuditService.Instance;
         }
 
         /// <summary>
@@ -60,10 +64,31 @@ namespace ZLGetCert.Services
                 // Export certificate to PEM format
                 ExportCertificateToPem(cert, pemPath);
 
-                // Export private key to KEY format (unencrypted)
+                // Export private key to KEY format (unencrypted - required for web servers)
                 ExportPrivateKeyToKey(cert, keyPath);
 
-                _logger.LogInfo("Successfully extracted PEM and KEY files");
+                // SECURITY: Set restrictive file permissions on both files
+                SetRestrictiveFilePermissions(pemPath);
+                SetRestrictiveFilePermissions(keyPath);
+
+                // SECURITY: Log warning about unencrypted key
+                _logger.LogWarning(
+                    "SECURITY: Unencrypted private key exported to {0}. " +
+                    "File permissions set to owner-only. " +
+                    "Ensure file is protected and securely deleted after deployment to server.", 
+                    keyPath);
+
+                // SECURITY AUDIT: Log private key export (security-critical event)
+                _auditService.LogAuditEvent(
+                    AuditService.AuditEventType.PrivateKeyExportedUnencrypted,
+                    $"Unencrypted private key exported to: {keyPath}. " +
+                    $"File permissions set to owner-only. " +
+                    $"PEM certificate exported to: {pemPath}",
+                    certificateName: certificateName,
+                    thumbprint: cert.Thumbprint,
+                    isSecurityCritical: true);
+
+                _logger.LogInfo("Successfully extracted PEM and KEY files with restricted permissions");
                 return true;
             }
             catch (CryptographicException ex)
@@ -413,6 +438,57 @@ namespace ZLGetCert.Services
                 
                 writer.Write((byte)(0x80 | lengthBytes.Length));
                 writer.Write(lengthBytes);
+            }
+        }
+
+        /// <summary>
+        /// Set restrictive NTFS permissions on file (owner + SYSTEM only)
+        /// CRITICAL: Protects unencrypted private key files
+        /// </summary>
+        private void SetRestrictiveFilePermissions(string filePath)
+        {
+            try
+            {
+                var fileInfo = new FileInfo(filePath);
+                var security = fileInfo.GetAccessControl();
+
+                // Disable inheritance - don't inherit permissions from parent folder
+                security.SetAccessRuleProtection(true, false);
+
+                // Remove all existing access rules
+                var accessRules = security.GetAccessRules(true, false, typeof(NTAccount));
+                foreach (FileSystemAccessRule rule in accessRules)
+                {
+                    security.RemoveAccessRule(rule);
+                }
+
+                // Add owner (current user) full control
+                var owner = WindowsIdentity.GetCurrent().User;
+                var ownerRule = new FileSystemAccessRule(
+                    owner,
+                    FileSystemRights.FullControl,
+                    AccessControlType.Allow);
+                security.AddAccessRule(ownerRule);
+
+                // Add SYSTEM account full control (required for services/scheduled tasks)
+                var systemSid = new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null);
+                var systemRule = new FileSystemAccessRule(
+                    systemSid,
+                    FileSystemRights.FullControl,
+                    AccessControlType.Allow);
+                security.AddAccessRule(systemRule);
+
+                // Apply the security settings
+                fileInfo.SetAccessControl(security);
+
+                _logger.LogInfo("SECURITY: Set owner-only permissions on file: {0}", filePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    "SECURITY WARNING: Failed to set restrictive permissions on {0}. " +
+                    "Manually set file permissions to owner-only! Error: {1}", 
+                    filePath, ex.Message);
             }
         }
 

@@ -380,7 +380,45 @@
                             <!-- PEM/KEY Export Options -->
                             <StackPanel Style="{StaticResource FormGroupStyle}">
                                 <CheckBox Content="Extract PEM and KEY files" 
-                                          IsChecked="{Binding CertificateRequest.ExtractPemKey}"/>
+                                          IsChecked="{Binding CertificateRequest.ExtractPemKey}"
+                                          ToolTip="Export certificate and private key in PEM format (required for web servers)"/>
+                                
+                                <!-- Security Warning for Unencrypted Keys -->
+                                <Border Background="#FFF3CD" 
+                                        BorderBrush="#FFC107" 
+                                        BorderThickness="1" 
+                                        Padding="10"
+                                        Margin="0,10,0,10"
+                                        Visibility="{Binding CertificateRequest.ShowKeySecurityWarning, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <StackPanel>
+                                        <TextBlock Text="⚠️ SECURITY NOTICE" 
+                                                   FontWeight="Bold" 
+                                                   Foreground="#856404"
+                                                   Margin="0,0,0,5"/>
+                                        <TextBlock TextWrapping="Wrap" Foreground="#856404" FontSize="11">
+                                            <Run Text="The .key file will be UNENCRYPTED (required by web servers)."/>
+                                            <LineBreak/>
+                                            <LineBreak/>
+                                            <Run Text="Security protections applied:"/>
+                                            <LineBreak/>
+                                            <Run Text="✓ File permissions set to owner-only automatically"/>
+                                            <LineBreak/>
+                                            <Run Text="✓ All exports logged to audit trail"/>
+                                            <LineBreak/>
+                                            <LineBreak/>
+                                            <Run Text="Your responsibilities:"/>
+                                            <LineBreak/>
+                                            <Run Text="• Copy to server using encrypted transfer (SFTP/SCP)"/>
+                                            <LineBreak/>
+                                            <Run Text="• Verify file permissions on destination (chmod 600)"/>
+                                            <LineBreak/>
+                                            <Run Text="• Securely delete local copy after deployment"/>
+                                            <LineBreak/>
+                                            <Run Text="• NEVER store in cloud storage or version control"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Border>
+                                
                                 <CheckBox Content="Extract CA bundle (intermediate + root certificates)" 
                                           IsChecked="{Binding CertificateRequest.ExtractCaBundle}"
                                           IsEnabled="{Binding CertificateRequest.ExtractPemKey}"
