@@ -451,6 +451,11 @@
                             Visibility="{Binding CertificateRequest.IsCSRWorkflow, Converter={StaticResource InverseBoolToVisibilityConverter}}">
                         <StackPanel>
                             <TextBlock Text="Organization Information" Style="{StaticResource SectionHeaderStyle}"/>
+                            <TextBlock Text="These fields become part of the certificate's X.500 Distinguished Name (DN)"
+                                       FontSize="11"
+                                       Foreground="#666666"
+                                       Margin="0,0,0,10"
+                                       TextWrapping="Wrap"/>
                             
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -482,6 +487,13 @@
                                                FontWeight="SemiBold"
                                                Margin="0,3,0,0"
                                                Visibility="{Binding CertificateRequest.LocationError, Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
+                                    <TextBlock FontSize="10"
+                                               Foreground="#666666"
+                                               Margin="0,3,0,0"
+                                               Visibility="{Binding CertificateRequest.LocationError, Converter={StaticResource InverseEmptyStringToVisibilityConverter}}">
+                                        <Run Text="X.500 field: L (Locality)" FontWeight="SemiBold"/><LineBreak/>
+                                        <Run Text="Examples: Seattle, New York, London"/>
+                                    </TextBlock>
                                 </StackPanel>
                                 
                                 <StackPanel Grid.Column="2" Style="{StaticResource FormGroupStyle}">
@@ -508,6 +520,13 @@
                                                FontWeight="SemiBold"
                                                Margin="0,3,0,0"
                                                Visibility="{Binding CertificateRequest.StateError, Converter={StaticResource EmptyStringToVisibilityConverter}}"/>
+                                    <TextBlock FontSize="10"
+                                               Foreground="#666666"
+                                               Margin="0,3,0,0"
+                                               Visibility="{Binding CertificateRequest.StateError, Converter={StaticResource InverseEmptyStringToVisibilityConverter}}">
+                                        <Run Text="X.500 field: S (State)" FontWeight="SemiBold"/><LineBreak/>
+                                        <Run Text="Examples: WA, CA, NY, TX"/>
+                                    </TextBlock>
                                 </StackPanel>
                             </Grid>
 
@@ -522,14 +541,52 @@
                                     <TextBlock Text="Organization *" Style="{StaticResource FieldLabelStyle}"/>
                                     <TextBox Text="{Binding CertificateRequest.Company}"
                                              ToolTip="Required: Your organization's domain name. Examples: company.com, organization.org"/>
+                                    <TextBlock FontSize="10"
+                                               Foreground="#666666"
+                                               Margin="0,3,0,0">
+                                        <Run Text="X.500 field: O (Organization)" FontWeight="SemiBold"/><LineBreak/>
+                                        <Run Text="Examples: company.com, acme.org"/>
+                                    </TextBlock>
                                 </StackPanel>
                                 
                                 <StackPanel Grid.Column="2" Style="{StaticResource FormGroupStyle}">
                                     <TextBlock Text="Organizational Unit *" Style="{StaticResource FieldLabelStyle}"/>
                                     <TextBox Text="{Binding CertificateRequest.OU}"
                                              ToolTip="Required: Department or division name. Examples: IT, Engineering, Operations"/>
+                                    <TextBlock FontSize="10"
+                                               Foreground="#666666"
+                                               Margin="0,3,0,0">
+                                        <Run Text="X.500 field: OU (Organizational Unit)" FontWeight="SemiBold"/><LineBreak/>
+                                        <Run Text="Examples: IT, Engineering, Operations"/>
+                                    </TextBlock>
                                 </StackPanel>
                             </Grid>
+                            
+                            <!-- Certificate Subject Preview -->
+                            <Border Background="#F0F8FF" 
+                                    BorderBrush="#007ACC" 
+                                    BorderThickness="1" 
+                                    CornerRadius="4"
+                                    Padding="12"
+                                    Margin="0,15,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="📋 Certificate Subject Preview" 
+                                               FontWeight="SemiBold" 
+                                               FontSize="12"
+                                               Foreground="#333333"
+                                               Margin="0,0,0,5"/>
+                                    <TextBlock Text="{Binding CertificateRequest.CertificateSubjectPreview}"
+                                               FontSize="11"
+                                               FontFamily="Consolas, Courier New"
+                                               Foreground="#007ACC"
+                                               TextWrapping="Wrap"/>
+                                    <TextBlock Text="This Distinguished Name (DN) will identify your certificate"
+                                               FontSize="10"
+                                               Foreground="#666666"
+                                               Margin="0,5,0,0"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </Border>
 

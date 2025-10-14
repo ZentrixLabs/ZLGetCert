@@ -90,6 +90,7 @@ namespace ZLGetCert.ViewModels
                 OnPropertyChanged(nameof(HostNameError));
                 OnPropertyChanged(nameof(ValidationSummary));
                 OnPropertyChanged(nameof(HasValidationErrors));
+                OnPropertyChanged(nameof(CertificateSubjectPreview));
             }
         }
 
@@ -104,6 +105,7 @@ namespace ZLGetCert.ViewModels
                 SetProperty(ref _fqdn, value);
                 OnPropertyChanged(nameof(CanGenerate));
                 OnPropertyChanged(nameof(FqdnDisplayText));
+                OnPropertyChanged(nameof(CertificateSubjectPreview));
             }
         }
 
@@ -181,6 +183,7 @@ namespace ZLGetCert.ViewModels
                 OnPropertyChanged(nameof(LocationError));
                 OnPropertyChanged(nameof(ValidationSummary));
                 OnPropertyChanged(nameof(HasValidationErrors));
+                OnPropertyChanged(nameof(CertificateSubjectPreview));
             }
         }
 
@@ -197,6 +200,7 @@ namespace ZLGetCert.ViewModels
                 OnPropertyChanged(nameof(StateError));
                 OnPropertyChanged(nameof(ValidationSummary));
                 OnPropertyChanged(nameof(HasValidationErrors));
+                OnPropertyChanged(nameof(CertificateSubjectPreview));
             }
         }
 
@@ -211,6 +215,8 @@ namespace ZLGetCert.ViewModels
                 SetProperty(ref _company, value);
                 UpdateFQDN();
                 OnPropertyChanged(nameof(CanGenerate));
+                OnPropertyChanged(nameof(CertificateSubjectPreview));
+                OnPropertyChanged(nameof(FqdnTooltip));
             }
         }
 
@@ -224,6 +230,7 @@ namespace ZLGetCert.ViewModels
             {
                 SetProperty(ref _ou, value);
                 OnPropertyChanged(nameof(CanGenerate));
+                OnPropertyChanged(nameof(CertificateSubjectPreview));
             }
         }
 
@@ -723,6 +730,48 @@ namespace ZLGetCert.ViewModels
         /// Whether validation summary should show error state
         /// </summary>
         public bool HasValidationErrors => MissingRequiredFields.Count > 0;
+
+        /// <summary>
+        /// Preview of the certificate subject Distinguished Name (DN)
+        /// Shows how the organization fields map to X.500 attributes
+        /// </summary>
+        public string CertificateSubjectPreview
+        {
+            get
+            {
+                var parts = new List<string>();
+
+                // CN (Common Name) - from FQDN or hostname
+                if (!string.IsNullOrWhiteSpace(FQDN))
+                    parts.Add($"CN={FQDN}");
+                else if (!string.IsNullOrWhiteSpace(HostName))
+                    parts.Add($"CN={HostName}");
+
+                // OU (Organizational Unit)
+                if (!string.IsNullOrWhiteSpace(OU))
+                    parts.Add($"OU={OU}");
+
+                // O (Organization)
+                if (!string.IsNullOrWhiteSpace(Company))
+                    parts.Add($"O={Company}");
+
+                // L (Locality/City)
+                if (!string.IsNullOrWhiteSpace(Location))
+                    parts.Add($"L={Location}");
+
+                // S (State/Province)
+                if (!string.IsNullOrWhiteSpace(State))
+                    parts.Add($"S={State}");
+
+                // C (Country) - Always US for this app
+                parts.Add("C=US");
+
+                if (parts.Count == 0)
+                    return "(Enter organization information to see certificate subject preview)";
+
+                return string.Join(", ", parts);
+            }
+        }
 
         /// <summary>
         /// Whether the form can generate a certificate
