@@ -46,8 +46,10 @@ A modern Windows WPF application that simplifies certificate requests from on-pr
 
 - **Windows Server 2016** or later (Windows Server 2012 R2 also supported)
 - **.NET Framework 4.8** (included in Windows Server 2019+, downloadable for older versions)
-- **Administrator privileges** (for certificate store operations)
+- **Administrator privileges** (only for certificate store operations, not for application configuration)
 - **No external dependencies** - PEM/KEY export built-in using .NET cryptography
+
+**Note:** The application itself runs without admin rights. Administrator privileges are only needed when installing certificates into the Windows certificate store. Settings and configuration can be saved by normal users.
 
 ### Why .NET Framework 4.8?
 
@@ -205,8 +207,13 @@ The application uses `appsettings.json` for configuration. All UI options are dy
 - Click the Settings button to access the configuration panel
 - Modify CA server settings, file paths, and default values
 - Configure logging options and hash algorithms
-- Settings are saved automatically and applied immediately
+- Settings are saved automatically to your user profile (no admin rights required)
 - Form-based interface with validation prevents invalid configurations
+
+**Settings Location:**
+- User settings: `%APPDATA%\ZentrixLabs\ZLGetCert\appsettings.json` (writable by all users)
+- Default template: `C:\Program Files\ZLGetCert\appsettings.json` (read-only)
+- Each user maintains their own configuration without needing administrator privileges
 
 ## Certificate Types Supported
 
@@ -400,6 +407,7 @@ For issues and questions:
   - Visual strength meter (Weak/Medium/Strong)
 - **Template/Type Validation**: Prevents mismatched configurations (e.g., WebServer template with CodeSigning type)
 - **Removed Default Passwords**: All hardcoded default passwords eliminated from configuration
+- **User Configuration Storage**: Settings saved to `%APPDATA%` (no admin rights required for configuration changes)
 
 #### User Experience Improvements ✅
 - **Inline Form Validation**: 
