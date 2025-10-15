@@ -97,18 +97,50 @@ jobs:
         shell: powershell
         continue-on-error: true
 
-      - name: Stamp version into ZLGetCert.exe
+      - name: Update AssemblyInfo.cs with version
+        run: |
+          $assemblyInfoPath = "${{ github.workspace }}\ZLGetCert\Properties\AssemblyInfo.cs"
+          $version = "${{ env.APP_VERSION }}"
+          
+          Write-Host "Updating AssemblyInfo.cs with version: $version"
+          Write-Host "AssemblyInfo.cs path: $assemblyInfoPath"
+          
+          if (Test-Path $assemblyInfoPath) {
+            $content = Get-Content $assemblyInfoPath -Raw
+            $content = $content -replace 'AssemblyVersion\(".*?"\)', "AssemblyVersion(`"$version.0`")"
+            $content = $content -replace 'AssemblyFileVersion\(".*?"\)', "AssemblyFileVersion(`"$version`")"
+            $content = $content -replace 'AssemblyInformationalVersion\(".*?"\)', "AssemblyInformationalVersion(`"$version`")"
+            Set-Content $assemblyInfoPath $content -NoNewline
+            Write-Host "AssemblyInfo.cs updated successfully"
+          } else {
+            Write-Error "AssemblyInfo.cs not found at $assemblyInfoPath"
+          }
+        shell: powershell
+
+      - name: Verify AssemblyInfo.cs was updated
+        run: |
+          $assemblyInfoPath = "${{ github.workspace }}\ZLGetCert\Properties\AssemblyInfo.cs"
+          Write-Host "Verifying AssemblyInfo.cs was updated correctly..."
+          if (Test-Path $assemblyInfoPath) {
+            $content = Get-Content $assemblyInfoPath -Raw
+            Write-Host "AssemblyInfo.cs content:"
+            Write-Host $content
+          } else {
+            Write-Error "AssemblyInfo.cs not found after update"
+          }
+        shell: powershell
+
+      - name: Rebuild ZLGetCert project with updated version
+        run: msbuild "${{ env.SolutionPath }}" /p:Configuration=Release /p:Platform="Any CPU"
+        shell: powershell
+
+      - name: Stamp additional version info into ZLGetCert.exe
         run: |
           & "${{ env.RCEDIT_PATH }}" "${{ env.ZLGetCertExe }}" --set-version-string "ProductVersion" "${{ env.APP_VERSION }}"
           & "${{ env.RCEDIT_PATH }}" "${{ env.ZLGetCertExe }}" --set-version-string "FileVersion" "${{ env.APP_VERSION }}"
-          & "${{ env.RCEDIT_PATH }}" "${{ env.ZLGetCertExe }}" --set-version-string "AssemblyVersion" "${{ env.APP_VERSION }}"
           & "${{ env.RCEDIT_PATH }}" "${{ env.ZLGetCertExe }}" --set-version-string "CompanyName" "ZentrixLabs"
           & "${{ env.RCEDIT_PATH }}" "${{ env.ZLGetCertExe }}" --set-version-string "ProductName" "ZLGetCert"
           & "${{ env.RCEDIT_PATH }}" "${{ env.ZLGetCertExe }}" --set-version-string "LegalCopyright" "Copyright © ZentrixLabs 2025"
-        shell: powershell
-
-      - name: Rebuild ZLGetCert project after stamping
-        run: msbuild "${{ env.SolutionPath }}" /p:Configuration=Release /p:Platform="Any CPU"
         shell: powershell
 
       - name: Verify version stamping worked
@@ -117,12 +149,28 @@ jobs:
           if (Test-Path "${{ env.ZLGetCertExe }}") {
             $fileInfo = Get-Item "${{ env.ZLGetCertExe }}"
             Write-Host "ZLGetCert.exe exists, size: $($fileInfo.Length) bytes"
-            Write-Host "File version should be: ${{ env.APP_VERSION }}"
+            Write-Host "Expected version: ${{ env.APP_VERSION }}"
             
             # Try to read version info using PowerShell
             $versionInfo = [System.Diagnostics.FileVersionInfo]::GetVersionInfo("${{ env.ZLGetCertExe }}")
             Write-Host "Actual File Version: $($versionInfo.FileVersion)"
             Write-Host "Actual Product Version: $($versionInfo.ProductVersion)"
+            
+            # Also try to get assembly version
+            try {
+              $assembly = [System.Reflection.Assembly]::LoadFile("${{ env.ZLGetCertExe }}")
+              $assemblyVersion = $assembly.GetName().Version
+              Write-Host "Actual Assembly Version: $assemblyVersion"
+            } catch {
+              Write-Host "Could not read assembly version: $($_.Exception.Message)"
+            }
+            
+            # Check if version is correct
+            if ($versionInfo.FileVersion -eq "${{ env.APP_VERSION }}") {
+              Write-Host "✅ Version stamping successful!"
+            } else {
+              Write-Host "❌ Version stamping failed - expected ${{ env.APP_VERSION }}, got $($versionInfo.FileVersion)"
+            }
           } else {
             Write-Error "ZLGetCert.exe not found after stamping"
           }
