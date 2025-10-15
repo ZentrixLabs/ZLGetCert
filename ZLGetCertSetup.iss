@@ -2,7 +2,9 @@
 ; This script creates an installer for ZLGetCert
 
 #define MyAppName "ZLGetCert"
+#ifndef MyAppVersion
 #define MyAppVersion "1.0.0"
+#endif
 #define MyAppPublisher "ZentrixLabs"
 #define MyAppURL "https://github.com/ZentrixLabs/ZLGetCert"
 #define MyAppExeName "ZLGetCert.exe"
