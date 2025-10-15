@@ -88,11 +88,71 @@ jobs:
         run: msbuild "${{ env.SolutionPath }}" -t:Restore -p:Configuration=Release -p:Platform="Any CPU"
         shell: powershell
 
-      - name: Build ZLGetCert with version properties
+      - name: Update project file with version
+        run: |
+          $version = "${{ env.APP_VERSION }}"
+          $projectFile = "${{ github.workspace }}\ZLGetCert\ZLGetCert.csproj"
+          
+          Write-Host "Updating project file with version: $version"
+          Write-Host "Project file: $projectFile"
+          
+          if (Test-Path $projectFile) {
+            $content = Get-Content $projectFile -Raw
+            $content = $content -replace '<AssemblyVersion>.*?</AssemblyVersion>', "<AssemblyVersion>$version.0</AssemblyVersion>"
+            $content = $content -replace '<FileVersion>.*?</FileVersion>', "<FileVersion>$version</FileVersion>"
+            $content = $content -replace '<InformationalVersion>.*?</InformationalVersion>', "<InformationalVersion>$version</InformationalVersion>"
+            Set-Content $projectFile $content -NoNewline
+            Write-Host "Project file updated successfully"
+          } else {
+            Write-Error "Project file not found: $projectFile"
+          }
+        shell: powershell
+
+      - name: Update AssemblyInfo.cs with version
+        run: |
+          $version = "${{ env.APP_VERSION }}"
+          $assemblyInfoPath = "${{ github.workspace }}\ZLGetCert\Properties\AssemblyInfo.cs"
+          
+          Write-Host "Updating AssemblyInfo.cs with version: $version"
+          Write-Host "AssemblyInfo.cs path: $assemblyInfoPath"
+          
+          if (Test-Path $assemblyInfoPath) {
+            $content = Get-Content $assemblyInfoPath -Raw
+            $content = $content -replace 'AssemblyVersion\(".*?"\)', "AssemblyVersion(`"$version.0`")"
+            $content = $content -replace 'AssemblyFileVersion\(".*?"\)', "AssemblyFileVersion(`"$version`")"
+            $content = $content -replace 'AssemblyInformationalVersion\(".*?"\)', "AssemblyInformationalVersion(`"$version`")"
+            Set-Content $assemblyInfoPath $content -NoNewline
+            Write-Host "AssemblyInfo.cs updated successfully"
+          } else {
+            Write-Error "AssemblyInfo.cs not found at $assemblyInfoPath"
+          }
+        shell: powershell
+
+      - name: Verify project file was updated
+        run: |
+          $projectFile = "${{ github.workspace }}\ZLGetCert\ZLGetCert.csproj"
+          Write-Host "Verifying project file was updated correctly..."
+          if (Test-Path $projectFile) {
+            $content = Get-Content $projectFile -Raw
+            if ($content -match '<AssemblyVersion>(.*?)</AssemblyVersion>') {
+              Write-Host "AssemblyVersion: $($matches[1])"
+            }
+            if ($content -match '<FileVersion>(.*?)</FileVersion>') {
+              Write-Host "FileVersion: $($matches[1])"
+            }
+            if ($content -match '<InformationalVersion>(.*?)</InformationalVersion>') {
+              Write-Host "InformationalVersion: $($matches[1])"
+            }
+          } else {
+            Write-Error "Project file not found after update"
+          }
+        shell: powershell
+
+      - name: Build ZLGetCert with updated version
         run: |
           $version = "${{ env.APP_VERSION }}"
           Write-Host "Building with version: $version"
-          msbuild "${{ env.SolutionPath }}" /p:Configuration=Release /p:Platform="Any CPU" /p:AssemblyVersion="$version.0" /p:AssemblyFileVersion="$version" /p:AssemblyInformationalVersion="$version"
+          msbuild "${{ env.SolutionPath }}" /p:Configuration=Release /p:Platform="Any CPU"
         shell: powershell
 
       - name: Debug build output directory after version build
