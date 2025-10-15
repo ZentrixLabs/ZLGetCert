@@ -12,7 +12,7 @@ permissions:
   id-token: write
 
 env:
-  SIGN_CODE: true # Disable code signing temporarily
+  SIGN_CODE: false # Disable code signing temporarily
   BASE_DIR: ${{ github.workspace }}
   ARTIFACTS_DIR: ${{ github.workspace }}\artifacts
   TEMP_DIR: ${{ github.workspace }}\artifacts\temp
@@ -271,73 +271,21 @@ jobs:
       - name: Generate Release Notes
         id: release_notes
         run: |
-          # Get the previous tag
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
-          
-          # Generate changelog from commits
-          if [ -n "$PREVIOUS_TAG" ]; then
-            echo "## ZLGetCert ${{ github.ref_name }}" > release_notes.md
-            echo "" >> release_notes.md
-            echo "A modern Windows WPF application for certificate management in enterprise and OT environments." >> release_notes.md
-            echo "" >> release_notes.md
-            echo "### 🚀 New Features" >> release_notes.md
-            git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD --grep="feat:" --grep="feature:" --grep="add:" --grep="new:" | sed 's/^feat: //' | sed 's/^feature: //' | sed 's/^add: //' | sed 's/^new: //' >> release_notes.md || echo "- No new features" >> release_notes.md
-            echo "" >> release_notes.md
-            echo "### 🐛 Bug Fixes" >> release_notes.md
-            git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD --grep="fix:" --grep="bug:" --grep="issue:" | sed 's/^fix: //' | sed 's/^bug: //' | sed 's/^issue: //' >> release_notes.md || echo "- No bug fixes" >> release_notes.md
-            echo "" >> release_notes.md
-            echo "### 🔧 Improvements" >> release_notes.md
-            git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD --grep="improve:" --grep="enhance:" --grep="update:" --grep="refactor:" | sed 's/^improve: //' | sed 's/^enhance: //' | sed 's/^update: //' | sed 's/^refactor: //' >> release_notes.md || echo "- No improvements" >> release_notes.md
-            echo "" >> release_notes.md
-            echo "### 📝 Documentation" >> release_notes.md
-            git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD --grep="docs:" --grep="doc:" --grep="readme:" | sed 's/^docs: //' | sed 's/^doc: //' | sed 's/^readme: //' >> release_notes.md || echo "- No documentation updates" >> release_notes.md
-            echo "" >> release_notes.md
-            echo "### 📦 Installation" >> release_notes.md
-            echo "**Interactive Install:** Run \`ZLGetCertInstaller.exe\` and follow the setup wizard." >> release_notes.md
-            echo "" >> release_notes.md
-            echo "**Silent Install (Enterprise):**" >> release_notes.md
-            echo "\`\`\`cmd" >> release_notes.md
-            echo "ZLGetCertInstaller.exe /VERYSILENT /NORESTART /SUPPRESSMSGBOXES" >> release_notes.md
-            echo "\`\`\`" >> release_notes.md
-            echo "" >> release_notes.md
-            echo "### 📋 Requirements" >> release_notes.md
-            echo "- Windows Server 2016 or later" >> release_notes.md
-            echo "- .NET Framework 4.8" >> release_notes.md
-            echo "- Administrator privileges" >> release_notes.md
-            echo "" >> release_notes.md
-            echo "### 🔄 All Changes" >> release_notes.md
-            git log --pretty=format:"- %s" $PREVIOUS_TAG..HEAD >> release_notes.md
-          else
-            echo "## Initial Release - ${{ github.ref_name }}" > release_notes.md
-            echo "" >> release_notes.md
-            echo "🎉 Welcome to ZLGetCert! This is the initial release of our certificate management application." >> release_notes.md
-            echo "" >> release_notes.md
-            echo "### ✨ Features" >> release_notes.md
-            echo "- Modern WPF interface with card-based UI" >> release_notes.md
-            echo "- Support for Standard, Wildcard, and CSR-based certificates" >> release_notes.md
-            echo "- Comprehensive configuration management" >> release_notes.md
-            echo "- Real-time JSON validation" >> release_notes.md
-            echo "- Built-in Users Guide" >> release_notes.md
-            echo "- OpenSSL integration" >> release_notes.md
-            echo "- Secure password handling" >> release_notes.md
-            echo "" >> release_notes.md
-            echo "### 📋 Requirements" >> release_notes.md
-            echo "- Windows Server 2016 or later" >> release_notes.md
-            echo "- .NET Framework 4.8" >> release_notes.md
-            echo "- Administrator privileges" >> release_notes.md
-          fi
+          # Just use the last commit message as release notes
+          git log -1 --pretty=format:"%s" > release_notes.md
+          echo "" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "For silent installation:" >> release_notes.md
+          echo "ZLGetCertInstaller.exe /VERYSILENT /NORESTART /SUPPRESSMSGBOXES" >> release_notes.md
           
           # Output the release notes
           cat release_notes.md
-          echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
-          cat release_notes.md >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: artifacts/ZLGetCertInstaller.exe
-          body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
+          body_path: release_notes.md
           draft: false
           prerelease: false
         env:
