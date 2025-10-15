@@ -6,7 +6,7 @@
         Width="900"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize"
-        Icon="../ZLGetCert_icon_v2.ico">
+        Icon="pack://application:,,,/ZLGetCert_icon_v2.ico">
     
     <Window.Resources>
         <ResourceDictionary>
