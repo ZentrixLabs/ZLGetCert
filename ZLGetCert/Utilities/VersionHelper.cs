@@ -34,9 +34,14 @@ namespace ZLGetCert.Utilities
 
         private static string GetVersionInternal()
         {
+            // First, try to get assembly version (this will be stamped by the build process)
+            var assemblyVersion = GetAssemblyVersion();
+            if (!string.IsNullOrEmpty(assemblyVersion) && assemblyVersion != "Unknown" && !assemblyVersion.StartsWith("0.0"))
+                return assemblyVersion;
+
+            // Only try git if assembly version is not available or is default
             try
             {
-                // Try to get version from git tags first
                 var gitVersion = GetGitVersion();
                 if (!string.IsNullOrEmpty(gitVersion))
                     return gitVersion;
@@ -47,8 +52,8 @@ namespace ZLGetCert.Utilities
                 System.Diagnostics.Debug.WriteLine($"Failed to get git version: {ex.Message}");
             }
 
-            // Fall back to assembly version
-            return GetAssemblyVersion();
+            // Final fallback to assembly version
+            return assemblyVersion;
         }
 
         private static string GetGitVersion()

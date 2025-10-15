@@ -370,16 +370,45 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Screenshots
 
-The application features a modern, professional interface with:
-- **Clean Visual Hierarchy**: Card-based layout with grouped form sections
-- **Professional Icons**: Font Awesome 7 Pro icons throughout (40+ standardized icons)
-- **Real-time Validation**: Red borders, inline error messages, and green/red validation summary
-- **Visual Feedback**: Password strength meters, certificate subject preview, status indicators
-- **Progressive Disclosure**: Show/hide functionality for passwords, optional fields
-- **Contextual Help**: Help icons with tooltips, field examples, template descriptions
-- **Bulk Operations**: Multi-line dialogs for adding multiple SANs at once
-- **Prominent Workflows**: CSR import at top, Generate button at bottom with smart status text
-- **Professional Branding**: Consistent color palette and spacing throughout
+### Main Interface - Certificate Generation
+
+![Main Certificate Generation Interface](docs/images/main-interface.png)
+
+The application features a modern, card-based layout with professional Font Awesome 7 Pro icons, grouped form sections, and clean visual hierarchy.
+
+### Real-time Validation & Feedback
+
+![Form Validation - Valid State](docs/images/validation-success.png)
+
+Valid forms show a green validation summary with checkmark. The certificate subject preview updates in real-time as you type.
+
+![Form Validation - Error State](docs/images/validation-errors.png)
+
+Invalid fields display red borders with inline error messages. Required fields are marked with asterisks (*), and the validation summary card shows remaining issues.
+
+### Password Generation & Strength Meter
+
+![Password Management](docs/images/password-strength.png)
+
+One-click strong password generation with visual color-coded strength meter (Weak/Medium/Strong). Includes show/hide toggle and always-visible requirements.
+
+### Bulk SAN Entry
+
+![Bulk SAN Entry Dialog](docs/images/bulk-san-entry.png)
+
+Add multiple DNS or IP Subject Alternative Names at once. Paste 10+ entries and save 90% of time compared to one-by-one entry.
+
+### CSR Import Workflow
+
+![CSR Import](docs/images/csr-import.png)
+
+Prominent CSR import button at the top with clear workflow separation. Form fields automatically hide after CSR import since the CSR contains that information.
+
+### Settings Configuration
+
+![Settings Panel](docs/images/settings-panel.png)
+
+In-app settings editor with form-based interface. Configure CA server, file paths, logging, and all application defaults. Settings save to `%APPDATA%` (no admin rights required).
 
 ## Support
 
