@@ -42,6 +42,7 @@ namespace ZLGetCert.Services
             try
             {
                 _logger.LogInfo("Extracting PEM and KEY files from {0} using native .NET", pfxPath);
+                _logger.LogInfo("Output directory: {0}, Certificate name: {1}", outputDir, certificateName);
 
                 if (!File.Exists(pfxPath))
                 {
@@ -116,6 +117,7 @@ namespace ZLGetCert.Services
             try
             {
                 _logger.LogInfo("Extracting certificate chain (CA bundle) from {0}", pfxPath);
+                _logger.LogInfo("Output directory: {0}, Chain name: {1}", outputDir, chainName);
 
                 if (!File.Exists(pfxPath))
                 {

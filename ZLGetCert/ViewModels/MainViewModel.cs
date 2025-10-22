@@ -369,9 +369,14 @@ namespace ZLGetCert.ViewModels
                 SetStatus("Generating certificate...", StatusMessageType.Info);
                 _logger.LogInfo("Starting certificate generation for {0}", CertificateRequest.CertificateName);
 
+                // Log the request details for debugging
+                var request = CertificateRequest.ToCertificateRequest();
+                _logger.LogInfo("Certificate request details - ExtractPemKey: {0}, ExtractCaBundle: {1}", 
+                    request.ExtractPemKey, request.ExtractCaBundle);
+
                 // Generate certificate
                 var certificate = await System.Threading.Tasks.Task.Run(() => 
-                    _certificateService.GenerateCertificate(CertificateRequest.ToCertificateRequest()));
+                    _certificateService.GenerateCertificate(request));
 
                 if (certificate.IsValid)
                 {

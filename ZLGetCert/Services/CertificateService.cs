@@ -565,7 +565,12 @@ namespace ZLGetCert.Services
 
                 if (certificateInfo.IsValid && request.ExtractPemKey)
                 {
+                    _logger.LogInfo("ExtractPemKey is true, calling ExtractPemAndKeyFiles for certificate: {0}", request.CertificateName);
                     ExtractPemAndKeyFiles(certificateInfo, request);
+                }
+                else
+                {
+                    _logger.LogInfo("PEM extraction skipped - IsValid: {0}, ExtractPemKey: {1}", certificateInfo.IsValid, request.ExtractPemKey);
                 }
 
                 // SECURITY AUDIT: Log successful certificate generation
@@ -908,8 +913,22 @@ namespace ZLGetCert.Services
                     return new CertificateInfo { IsValid = false, ErrorMessage = "Certificate not found in store" };
                 }
 
-                // Repair certificate store
+                // Repair certificate store to associate private key
                 RepairCertificate(cert.Thumbprint);
+
+                // Re-find the certificate after repair to get the one with private key
+                cert = FindCertificateInStore(request);
+                if (cert == null)
+                {
+                    return new CertificateInfo { IsValid = false, ErrorMessage = "Certificate not found in store after repair" };
+                }
+
+                // Check if certificate has private key
+                if (!cert.HasPrivateKey)
+                {
+                    _logger.LogError("Certificate does not have private key after repair. Thumbprint: {0}", cert.Thumbprint);
+                    return new CertificateInfo { IsValid = false, ErrorMessage = "Certificate does not contain a private key. This may be due to certificate store issues or the certificate not being properly associated with the private key." };
+                }
 
                 // Export PFX with password
                 var password = GetPasswordFromSecureString(request.PfxPassword);
@@ -936,7 +955,7 @@ namespace ZLGetCert.Services
         }
 
         /// <summary>
-        /// Import certificate to current user store
+        /// Import certificate to current user store (no admin required)
         /// </summary>
         private void ImportCertificate(string cerPath)
         {
@@ -966,11 +985,24 @@ namespace ZLGetCert.Services
                 var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
                 store.Open(OpenFlags.ReadOnly);
 
-                var cert = store.Certificates.Cast<X509Certificate2>()
+                // First try to find a certificate with private key
+                var certWithKey = store.Certificates.Cast<X509Certificate2>()
+                    .FirstOrDefault(c => (c.Subject.Contains(request.FQDN) || 
+                                        (request.Type == CertificateType.Wildcard && c.Subject.Contains("*.example.com"))) &&
+                                       c.HasPrivateKey);
+
+                // If no certificate with private key found, try any certificate matching the subject
+                var cert = certWithKey ?? store.Certificates.Cast<X509Certificate2>()
                     .FirstOrDefault(c => c.Subject.Contains(request.FQDN) || 
                                        (request.Type == CertificateType.Wildcard && c.Subject.Contains("*.example.com")));
 
                 store.Close();
+                
+                if (cert != null)
+                {
+                    _logger.LogInfo("Found certificate in store: {0}, HasPrivateKey: {1}", cert.Subject, cert.HasPrivateKey);
+                }
+                
                 return cert;
             }
             catch (Exception ex)
@@ -1063,19 +1095,33 @@ namespace ZLGetCert.Services
         /// </summary>
         private void ExtractPemAndKeyFiles(CertificateInfo certInfo, Models.CertificateRequest request)
         {
+            _logger.LogInfo("Starting PEM extraction for certificate: {0}, PFX: {1}", request.CertificateName, certInfo.PfxPath);
+            
             var config = _configService.GetConfiguration();
             var password = GetPasswordFromSecureString(request.PfxPassword);
 
+            _logger.LogInfo("Calling PemExportService.ExtractPemAndKey with ExtractCaBundle: {0}", request.ExtractCaBundle);
+            
             if (_pemExportService.ExtractPemAndKey(certInfo.PfxPath, password, config.FilePaths.CertificateFolder, request.CertificateName))
             {
+                _logger.LogInfo("PEM and KEY extraction successful, setting file paths");
                 certInfo.PemPath = Path.Combine(config.FilePaths.CertificateFolder, $"{request.CertificateName}.pem");
                 certInfo.KeyPath = Path.Combine(config.FilePaths.CertificateFolder, $"{request.CertificateName}.key");
 
                 // Extract certificate chain (CA bundle) if requested
                 if (request.ExtractCaBundle)
                 {
+                    _logger.LogInfo("ExtractCaBundle is true, calling ExtractCertificateChain");
                     _pemExportService.ExtractCertificateChain(certInfo.PfxPath, password, config.FilePaths.CertificateFolder, "ca-bundle");
                 }
+                else
+                {
+                    _logger.LogInfo("ExtractCaBundle is false, skipping CA bundle extraction");
+                }
+            }
+            else
+            {
+                _logger.LogError("PemExportService.ExtractPemAndKey returned false for certificate: {0}", request.CertificateName);
             }
         }
 
