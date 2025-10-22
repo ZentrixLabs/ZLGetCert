@@ -46,10 +46,10 @@ A modern Windows WPF application that simplifies certificate requests from on-pr
 
 - **Windows Server 2016** or later (Windows Server 2012 R2 also supported)
 - **.NET Framework 4.8** (included in Windows Server 2019+, downloadable for older versions)
-- **No administrator privileges required** - runs with standard user permissions
+- **Administrator privileges required** - certificate operations require elevated permissions
 - **No external dependencies** - PEM/KEY export built-in using .NET cryptography
 
-**Note:** The application runs entirely without admin rights. All certificate operations use the CurrentUser certificate store, eliminating the need for elevated privileges.
+**Note:** The application requires administrator privileges to perform certificate operations. This matches the behavior of the underlying Windows certificate infrastructure (`certreq.exe`, `certutil.exe`) and ensures reliable certificate generation and PEM extraction.
 
 ### Why .NET Framework 4.8?
 

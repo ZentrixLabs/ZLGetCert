@@ -955,18 +955,18 @@ namespace ZLGetCert.Services
         }
 
         /// <summary>
-        /// Import certificate to current user store (no admin required)
+        /// Import certificate to local machine store (requires admin privileges)
         /// </summary>
         private void ImportCertificate(string cerPath)
         {
             try
             {
                 var cert = new X509Certificate2(cerPath);
-                var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+                var store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
                 store.Open(OpenFlags.ReadWrite);
                 store.Add(cert);
                 store.Close();
-                _logger.LogInfo("Certificate imported to CurrentUser\\My store");
+                _logger.LogInfo("Certificate imported to LocalMachine\\My store");
             }
             catch (Exception ex)
             {
@@ -982,7 +982,7 @@ namespace ZLGetCert.Services
         {
             try
             {
-                var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+                var store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
                 store.Open(OpenFlags.ReadOnly);
 
                 // First try to find a certificate with private key
