@@ -1,6 +1,6 @@
 # ZLGetCert
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.8-blue.svg)](https://dotnet.microsoft.com/download/dotnet-framework)
 [![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 
@@ -46,10 +46,10 @@ A modern Windows WPF application that simplifies certificate requests from on-pr
 
 - **Windows Server 2016** or later (Windows Server 2012 R2 also supported)
 - **.NET Framework 4.8** (included in Windows Server 2019+, downloadable for older versions)
-- **Administrator privileges** (only for certificate store operations, not for application configuration)
+- **No administrator privileges required** - runs with standard user permissions
 - **No external dependencies** - PEM/KEY export built-in using .NET cryptography
 
-**Note:** The application itself runs without admin rights. Administrator privileges are only needed when installing certificates into the Windows certificate store. Settings and configuration can be saved by normal users.
+**Note:** The application runs entirely without admin rights. All certificate operations use the CurrentUser certificate store, eliminating the need for elevated privileges.
 
 ### Why .NET Framework 4.8?
 
@@ -366,7 +366,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for deta
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU Lesser General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
 ## Screenshots
 

@@ -40,7 +40,7 @@
 ZLGetCert/
 ├── README.md                    # Main project documentation
 ├── CONTRIBUTING.md             # Contribution guidelines
-├── LICENSE                     # MIT License
+├── LICENSE                     # LGPL v3 License
 ├── docs/                       # Organized documentation
 │   ├── README.md              # Documentation index
 │   ├── user-guides/           # Feature documentation
