@@ -298,13 +298,17 @@ namespace ZLGetCert.ViewModels
         }
 
         /// <summary>
-        /// Internal certificate type - derived from template selection
+        /// Internal certificate type - derived from template selection or CSR file
         /// NOT exposed to UI - template selection determines this automatically
         /// </summary>
         internal CertificateType Type
         {
             get
             {
+                // If CSR file is selected, this is a FromCSR type
+                if (IsCSRWorkflow)
+                    return CertificateType.FromCSR;
+
                 // Derive type from template
                 if (string.IsNullOrEmpty(Template))
                     return CertificateType.Custom;
@@ -329,6 +333,9 @@ namespace ZLGetCert.ViewModels
             {
                 SetProperty(ref _csrFilePath, value);
                 OnPropertyChanged(nameof(CanGenerate));
+                OnPropertyChanged(nameof(IsCSRWorkflow));
+                OnPropertyChanged(nameof(ValidationSummary));
+                OnPropertyChanged(nameof(HasValidationErrors));
             }
         }
 
@@ -1020,15 +1027,6 @@ namespace ZLGetCert.ViewModels
         /// </summary>
         public CertificateRequest ToCertificateRequest()
         {
-            // Determine certificate type from template and wildcard setting
-            var certType = Type; // Uses internal Type property that derives from template
-            
-            // Override to FromCSR if we have a CSR file path
-            if (!string.IsNullOrWhiteSpace(CsrFilePath))
-            {
-                certType = CertificateType.FromCSR;
-            }
-
             var request = new CertificateRequest
             {
                 HostName = HostName,
@@ -1039,7 +1037,7 @@ namespace ZLGetCert.ViewModels
                 OU = OU,
                 CAServer = CAServer,
                 Template = Template,
-                Type = certType, // Type is now derived, not user-selected
+                Type = Type, // Type property handles CSR detection automatically
                 CsrFilePath = CsrFilePath,
                 ExtractPemKey = ExtractPemKey,
                 ExtractCaBundle = ExtractCaBundle,

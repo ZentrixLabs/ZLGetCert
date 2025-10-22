@@ -179,6 +179,15 @@ namespace ZLGetCert.Utilities
         /// </summary>
         private static void ValidateCommonFields(CertificateRequest request, ValidationResult result)
         {
+            // Skip common field validation for CSR-based certificates
+            // CSR contains all the subject information (CN, O, OU, L, ST, C)
+            if (request.Type == CertificateType.FromCSR)
+            {
+                // Only validate SANs for CSR-based certificates
+                ValidateSans(request.DnsSans, request.IpSans, result);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(request.Location))
             {
                 result.AddError("Location is required");
