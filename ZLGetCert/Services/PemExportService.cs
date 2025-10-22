@@ -125,48 +125,52 @@ namespace ZLGetCert.Services
                     return false;
                 }
 
-                // Load all certificates from PFX
-                var collection = new X509Certificate2Collection();
-                collection.Import(pfxPath, password, X509KeyStorageFlags.Exportable);
+                // Load the certificate with private key from PFX
+                var cert = new X509Certificate2(pfxPath, password, X509KeyStorageFlags.Exportable);
 
-                // Find the leaf certificate (the one with a private key)
-                X509Certificate2 leafCert = null;
-                var chainCerts = new List<X509Certificate2>();
-
-                foreach (X509Certificate2 cert in collection)
+                // Build the certificate chain using Windows chain building
+                using (var chain = new X509Chain())
                 {
-                    if (cert.HasPrivateKey)
+                    // Configure chain building options
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck; // Skip revocation checking for chain building
+                    chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+                    
+                    // Build the chain
+                    bool chainBuilt = chain.Build(cert);
+                    
+                    if (!chainBuilt)
                     {
-                        leafCert = cert;
+                        _logger.LogWarning("Certificate chain building failed, but continuing with available certificates");
                     }
-                    else
+
+                    // Extract intermediate and root certificates (skip the leaf certificate at index 0)
+                    var chainCerts = new List<X509Certificate2>();
+                    for (int i = 1; i < chain.ChainElements.Count; i++)
                     {
-                        chainCerts.Add(cert);
+                        chainCerts.Add(chain.ChainElements[i].Certificate);
                     }
+
+                    if (chainCerts.Count == 0)
+                    {
+                        _logger.LogWarning("No intermediate/root certificates found in chain (this is normal for self-signed or direct CA certs)");
+                        return true; // Not an error - some certs don't have chains
+                    }
+
+                    // Export the chain to PEM format
+                    var chainPath = Path.Combine(outputDir, $"{chainName}.pem");
+                    var chainBuilder = new StringBuilder();
+
+                    foreach (var chainCert in chainCerts)
+                    {
+                        chainBuilder.AppendLine("-----BEGIN CERTIFICATE-----");
+                        chainBuilder.AppendLine(Convert.ToBase64String(chainCert.RawData, Base64FormattingOptions.InsertLineBreaks));
+                        chainBuilder.AppendLine("-----END CERTIFICATE-----");
+                    }
+
+                    File.WriteAllText(chainPath, chainBuilder.ToString(), Encoding.ASCII);
+                    _logger.LogInfo("Successfully extracted {0} certificate(s) to CA bundle: {1}", chainCerts.Count, chainPath);
+                    return true;
                 }
-
-                if (chainCerts.Count == 0)
-                {
-                    _logger.LogWarning("No chain certificates found in PFX (this is normal for self-signed or direct CA certs)");
-                    return true; // Not an error - some certs don't have chains
-                }
-
-                // Order the chain certificates properly: ICA (closest to leaf) → Root CA
-                var orderedChain = OrderCertificateChain(leafCert, chainCerts);
-
-                var chainPath = Path.Combine(outputDir, $"{chainName}.pem");
-                var chainBuilder = new StringBuilder();
-
-                foreach (var cert in orderedChain)
-                {
-                    chainBuilder.AppendLine("-----BEGIN CERTIFICATE-----");
-                    chainBuilder.AppendLine(Convert.ToBase64String(cert.RawData, Base64FormattingOptions.InsertLineBreaks));
-                    chainBuilder.AppendLine("-----END CERTIFICATE-----");
-                }
-
-                File.WriteAllText(chainPath, chainBuilder.ToString(), Encoding.ASCII);
-                _logger.LogInfo("Successfully extracted {0} certificate(s) to CA bundle: {1}", orderedChain.Count, chainPath);
-                return true;
             }
             catch (Exception ex)
             {
