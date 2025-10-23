@@ -86,10 +86,7 @@ This application intentionally targets **.NET Framework 4.8** rather than modern
 
 2. Open `ZLGetCert.sln` in Visual Studio 2019 or later
 
-3. Build the solution:
-   ```bash
-   msbuild ZLGetCert.sln /p:Configuration=Release
-   ```
+3. Build the solution in Visual Studio (Release | x64)
 
 4. Run the application from `ZLGetCert\bin\Release\ZLGetCert.exe`
 
@@ -311,13 +308,7 @@ ZLGetCert/
 ```
 
 ### Building
-```bash
-# Debug build
-msbuild ZLGetCert.sln /p:Configuration=Debug
-
-# Release build
-msbuild ZLGetCert.sln /p:Configuration=Release
-```
+Use Visual Studio to build. Command-line builds (msbuild/dotnet) are not supported for this .NET Framework 4.8 WPF project.
 
 ### UI Development
 The application uses modern WPF patterns:
@@ -343,6 +334,7 @@ The application uses modern WPF patterns:
 - **[User Guides](docs/user-guides/)** - Feature-specific documentation and improvements
 - **[Development Docs](docs/development/)** - Technical implementation details and architecture
 - **[Configuration Examples](ZLGetCert/examples/)** - Sample configuration files for different environments
+- **[Local Release Workflow](docs/development/LOCAL_RELEASE_WORKFLOW.md)** - Build, sign, and publish releases locally (no GitHub Actions)
 
 ## Contributing
 

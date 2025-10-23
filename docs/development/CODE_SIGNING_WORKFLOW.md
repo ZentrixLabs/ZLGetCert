@@ -1,19 +1,12 @@
-# Code Signing Workflow
+# Code Signing Workflow (Deprecated GitHub Actions)
 
-## Overview
-
-As of October 2025, ZLGetCert uses a split workflow approach for releases to save on SSL.com code signing credits:
-
-1. **Automated Unsigned Releases**: Tag-triggered releases that build and publish unsigned installers
-2. **Manual Code Signing**: Separate workflow to sign final production releases
+This document described the previous GitHub Actions-based signing flow. We have moved to a local, script-driven workflow. See `docs/development/LOCAL_RELEASE_WORKFLOW.md` for the current process.
 
 ## Workflows
 
-### 1. Build and Release (Unsigned)
+### 1. Build and Release (Unsigned) — Deprecated
 
-**File**: `.github/workflows/deploy.yml`  
-**Trigger**: Automatic on tag push (`v*.*.*`)  
-**Purpose**: Testing and interim releases
+Previously handled by `.github/workflows/deploy.yml` on tag push.
 
 #### What it does:
 - Builds the application from the tagged commit
@@ -31,11 +24,9 @@ git push origin v1.2.3
 # Creates release with unsigned installer
 ```
 
-### 2. Code Sign Existing Release
+### 2. Code Sign Existing Release — Deprecated
 
-**File**: `.github/workflows/code-sign-release.yml`  
-**Trigger**: Manual workflow dispatch  
-**Purpose**: Sign final production releases
+Previously handled by `.github/workflows/code-sign-release.yml` via manual dispatch.
 
 #### What it does:
 - Downloads the installer from an existing release
@@ -73,23 +64,9 @@ git push origin v1.2.3
   - `true`: Replaces `ZLGetCertInstaller.exe` with signed version
   - `false`: Keeps both `ZLGetCertInstaller.exe` (unsigned) and `ZLGetCertInstaller-X.X.X-signed.exe`
 
-## Recommended Workflow
+## Current Workflow
 
-### For Testing/Development Releases:
-
-1. Create a tag and push it
-2. Let the automated workflow create an unsigned release
-3. Test the unsigned installer
-4. Do NOT sign it (saves credits)
-
-### For Production Releases:
-
-1. Create a tag and push it
-2. Let the automated workflow create an unsigned release
-3. Test the unsigned installer thoroughly
-4. Once validated, manually run the code signing workflow
-5. Choose `replace_assets=true` to replace the unsigned version
-6. Announce the signed production release
+Use the local scripts documented in `LOCAL_RELEASE_WORKFLOW.md` to prepare, optionally sign, and publish releases.
 
 ## Benefits
 

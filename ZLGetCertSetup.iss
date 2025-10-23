@@ -3,7 +3,13 @@
 
 #define MyAppName "ZLGetCert"
 #ifndef MyAppVersion
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.8.2"
+#endif
+#ifndef EnableSigning
+#define EnableSigning "1"
+#endif
+#ifndef ZLGetCertBin
+#define ZLGetCertBin "ZLGetCert\bin\Release"
 #endif
 #define MyAppPublisher "ZentrixLabs"
 #define MyAppURL "https://github.com/ZentrixLabs/ZLGetCert"
@@ -20,6 +26,13 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
+; Version info shown in installer file Properties → Details
+VersionInfoVersion={#MyAppVersion}
+VersionInfoCompany={#MyAppPublisher}
+VersionInfoDescription={#MyAppName} Setup
+VersionInfoProductName={#MyAppName}
+VersionInfoProductVersion={#MyAppVersion}
+VersionInfoCopyright=Copyright © ZentrixLabs 2025
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
@@ -31,8 +44,16 @@ Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=admin
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+UninstallDisplayIcon={app}\ZLGetCert_icon_v2.ico
+UninstallDisplayName=ZLGetCert - Certificate Requester
+#if EnableSigning == "1"
+SignTool=SignTool
+SignedUninstaller=yes
+#else
+SignedUninstaller=no
+#endif
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -41,7 +62,10 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "ZLGetCert\bin\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Sign the main application executable
+Source: "{#ZLGetCertBin}\ZLGetCert.exe"; DestDir: "{app}"; Flags: ignoreversion
+; Include the rest of the build output
+Source: "{#ZLGetCertBin}\*"; Excludes: "ZLGetCert.exe"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
@@ -51,3 +75,5 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilen
 
 [Run]
 ; Removed auto-launch since application requires admin privileges
+
+
