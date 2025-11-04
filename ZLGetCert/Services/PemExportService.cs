@@ -66,15 +66,17 @@ namespace ZLGetCert.Services
                 // Export certificate to PEM format
                 // CRITICAL: Use CER file if provided to ensure we get the correct certificate
                 // (PFX may contain a different certificate than the CER file)
+                X509Certificate2 pemCert; // Certificate used for PEM export (for thumbprint logging)
                 if (!string.IsNullOrEmpty(cerPath) && File.Exists(cerPath))
                 {
                     _logger.LogInfo("Extracting PEM certificate from CER file: {0} (to ensure correct certificate)", cerPath);
-                    var cerCert = new X509Certificate2(cerPath);
-                    ExportCertificateToPem(cerCert, pemPath);
+                    pemCert = new X509Certificate2(cerPath);
+                    ExportCertificateToPem(pemCert, pemPath);
                 }
                 else
                 {
                     _logger.LogInfo("Extracting PEM certificate from PFX file: {0}", pfxPath);
+                    pemCert = pfxCert;
                     ExportCertificateToPem(pfxCert, pemPath);
                 }
 
@@ -100,7 +102,7 @@ namespace ZLGetCert.Services
                     $"File permissions set to owner-only. " +
                     $"PEM certificate exported to: {pemPath}",
                     certificateName: certificateName,
-                    thumbprint: cert.Thumbprint,
+                    thumbprint: pemCert.Thumbprint,
                     isSecurityCritical: true);
 
                 _logger.LogInfo("Successfully extracted PEM and KEY files with restricted permissions");
