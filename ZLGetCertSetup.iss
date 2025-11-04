@@ -3,7 +3,7 @@
 
 #define MyAppName "ZLGetCert"
 #ifndef MyAppVersion
-#define MyAppVersion "1.8.2"
+#define MyAppVersion "1.8.3"
 #endif
 #ifndef EnableSigning
 #define EnableSigning "1"
@@ -75,5 +75,6 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilen
 
 [Run]
 ; Removed auto-launch since application requires admin privileges
+
 
 
