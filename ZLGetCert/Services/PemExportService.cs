@@ -36,8 +36,9 @@ namespace ZLGetCert.Services
         /// <param name="password">PFX password</param>
         /// <param name="outputDir">Output directory</param>
         /// <param name="certificateName">Base name for output files</param>
+        /// <param name="cerPath">Optional path to CER file. If provided, PEM certificate will be extracted from CER instead of PFX to ensure correct certificate.</param>
         /// <returns>True if successful</returns>
-        public bool ExtractPemAndKey(string pfxPath, string password, string outputDir, string certificateName)
+        public bool ExtractPemAndKey(string pfxPath, string password, string outputDir, string certificateName, string cerPath = null)
         {
             try
             {
@@ -50,10 +51,10 @@ namespace ZLGetCert.Services
                     return false;
                 }
 
-                // Load the PFX certificate with private key
-                var cert = new X509Certificate2(pfxPath, password, X509KeyStorageFlags.Exportable);
+                // Load the PFX certificate with private key (needed for key extraction)
+                var pfxCert = new X509Certificate2(pfxPath, password, X509KeyStorageFlags.Exportable);
 
-                if (!cert.HasPrivateKey)
+                if (!pfxCert.HasPrivateKey)
                 {
                     _logger.LogError("Certificate does not contain a private key");
                     return false;
@@ -63,10 +64,23 @@ namespace ZLGetCert.Services
                 var keyPath = Path.Combine(outputDir, $"{certificateName}.key");
 
                 // Export certificate to PEM format
-                ExportCertificateToPem(cert, pemPath);
+                // CRITICAL: Use CER file if provided to ensure we get the correct certificate
+                // (PFX may contain a different certificate than the CER file)
+                if (!string.IsNullOrEmpty(cerPath) && File.Exists(cerPath))
+                {
+                    _logger.LogInfo("Extracting PEM certificate from CER file: {0} (to ensure correct certificate)", cerPath);
+                    var cerCert = new X509Certificate2(cerPath);
+                    ExportCertificateToPem(cerCert, pemPath);
+                }
+                else
+                {
+                    _logger.LogInfo("Extracting PEM certificate from PFX file: {0}", pfxPath);
+                    ExportCertificateToPem(pfxCert, pemPath);
+                }
 
                 // Export private key to KEY format (unencrypted - required for web servers)
-                ExportPrivateKeyToKey(cert, keyPath);
+                // Always use PFX for private key since CER doesn't contain private key
+                ExportPrivateKeyToKey(pfxCert, keyPath);
 
                 // SECURITY: Set restrictive file permissions on both files
                 SetRestrictiveFilePermissions(pemPath);

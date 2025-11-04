@@ -1101,8 +1101,11 @@ namespace ZLGetCert.Services
             var password = GetPasswordFromSecureString(request.PfxPassword);
 
             _logger.LogInfo("Calling PemExportService.ExtractPemAndKey with ExtractCaBundle: {0}", request.ExtractCaBundle);
+            _logger.LogInfo("CER Path: {0}, PFX Path: {1}", certInfo.CerPath, certInfo.PfxPath);
             
-            if (_pemExportService.ExtractPemAndKey(certInfo.PfxPath, password, config.FilePaths.CertificateFolder, request.CertificateName))
+            // Pass CER path to ensure PEM is extracted from the correct certificate (CER file)
+            // rather than potentially different certificate in PFX
+            if (_pemExportService.ExtractPemAndKey(certInfo.PfxPath, password, config.FilePaths.CertificateFolder, request.CertificateName, certInfo.CerPath))
             {
                 _logger.LogInfo("PEM and KEY extraction successful, setting file paths");
                 certInfo.PemPath = Path.Combine(config.FilePaths.CertificateFolder, $"{request.CertificateName}.pem");
