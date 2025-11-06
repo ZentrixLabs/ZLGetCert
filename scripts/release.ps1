@@ -1,40 +1,71 @@
 param(
 	[Parameter(Mandatory=$true)][string]$Version,
 	[switch]$Sign,
-	[switch]$Draft,
-	[string]$IssuerTimestampUrl = "http://timestamp.sectigo.com"
+	[switch]$Draft
 )
 
 $ErrorActionPreference = 'Stop'
-. "$PSScriptRoot\common.ps1"
 
+# Ensure we operate from repository root
 $root = Resolve-Path "$PSScriptRoot\.."
 Set-Location $root
 
 $artifacts = Join-Path $root 'artifacts'
-Ensure-Directory -Path $artifacts
-
-Write-Host "Updating Inno Setup version to $Version" -ForegroundColor Cyan
-& "$PSScriptRoot\update-iss-version.ps1" -Version $Version
-
-Write-Host "Please build the WPF app in Visual Studio (Release|x64), then compile the Inno Setup script (ZLGetCertSetup.iss) to generate the installer in 'artifacts'." -ForegroundColor Yellow
-Read-Host "Press Enter after the installer has been generated"
-
-$installer = Get-ChildItem -LiteralPath $artifacts -Filter 'ZLGetCertInstaller*.exe' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-if (-not $installer) { throw "No installer found in $artifacts. Ensure Inno Setup output is configured to 'artifacts'." }
-
-if ($Sign) {
-	& "$PSScriptRoot\sign-installer.ps1" -InstallerPath $installer.FullName -TimestampUrl $IssuerTimestampUrl -VerboseLog
+if (-not (Test-Path $artifacts)) {
+	New-Item -ItemType Directory -Path $artifacts | Out-Null
 }
 
-$checksum = New-Checksum -FilePath $installer.FullName
+Write-Host "=== ZLGetCert Release Workflow ===" -ForegroundColor Green
 
+# Step 1: Update version in project files
+Write-Host "`nStep 1: Updating version to $Version..." -ForegroundColor Cyan
+& "$PSScriptRoot\update-version.ps1" -Version $Version
+
+if ($Sign) {
+	# Step 2: Build and sign the app
+	Write-Host "`nStep 2: Please build in Visual Studio (Release), then we'll sign the EXE..." -ForegroundColor Yellow
+	Read-Host "Press Enter after building in Visual Studio"
+	
+	Write-Host "Signing ZLGetCert.exe..." -ForegroundColor Yellow
+	& "$PSScriptRoot\sign-app.ps1"
+} else {
+	# Step 2: Just build
+	Write-Host "`nStep 2: Please build in Visual Studio (Release)..." -ForegroundColor Yellow
+	Read-Host "Press Enter after building in Visual Studio"
+}
+
+# Step 3: Compile installer in Inno Setup GUI
+Write-Host "`nStep 3: Please compile the installer in Inno Setup GUI..." -ForegroundColor Yellow
+Write-Host "  Open ZLGetCertSetup.iss and compile it" -ForegroundColor DarkGray
+Write-Host "  The installer will be signed automatically via SignTool (already configured in IDE)" -ForegroundColor DarkGray
+Read-Host "Press Enter after the installer has been generated in 'artifacts'"
+
+# Step 4: Find the installer
+$installer = Get-ChildItem -LiteralPath $artifacts -Filter 'ZLGetCertInstaller*.exe' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+if (-not $installer) { 
+	throw "No installer found in $artifacts. Ensure Inno Setup output is configured to 'artifacts'." 
+}
+
+Write-Host "Found installer: $($installer.Name)" -ForegroundColor Green
+
+# Step 5: Create checksum
+Write-Host "`nStep 4: Creating checksum..." -ForegroundColor Cyan
+$shaFile = "$($installer.FullName).sha256"
+$sha = (Get-FileHash -Algorithm SHA256 $installer.FullName).Hash
+Set-Content -Path $shaFile -NoNewline -Value $sha
+Write-Host "Checksum: $shaFile" -ForegroundColor Green
+
+# Step 6: Upload to GitHub
+Write-Host "`nStep 5: Uploading to GitHub..." -ForegroundColor Cyan
 $tag = "v$Version"
 $title = "ZLGetCert $Version"
 $notes = "Release $Version"
 
-& "$PSScriptRoot\create-github-release.ps1" -Tag $tag -Title $title -Notes $notes -AssetPath $installer.FullName -Draft:$Draft
+& "$PSScriptRoot\upload-release.ps1" -Version $Version -InstallerPath $installer.FullName -Notes $notes
 
-Write-Host "Done." -ForegroundColor Green
-
-
+Write-Host "`n=== Release complete ===" -ForegroundColor Green
+Write-Host "Release: $tag" -ForegroundColor Cyan
+Write-Host "Installer: $($installer.FullName)" -ForegroundColor Cyan
+if ($Draft) {
+	Write-Host "Published as draft release" -ForegroundColor Yellow
+}
