@@ -71,7 +71,7 @@ namespace ZLGetCert.Services
         /// Always includes the FQDN and HostName (short name) when valid.
         /// </summary>
         /// <param name="request">Certificate request to modify.</param>
-        private void EnsureDefaultSans(CertificateRequest request)
+        private void EnsureDefaultSans(ZLGetCert.Models.CertificateRequest request)
         {
             if (request == null)
                 return;

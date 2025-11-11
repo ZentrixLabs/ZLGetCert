@@ -23,6 +23,7 @@ A modern Windows WPF application that simplifies certificate requests from on-pr
 - **Command Injection Prevention**: Comprehensive input validation on all external process calls
 - **Strong Password Enforcement**: Real-time password strength validation with common password blocking
 - **Template/Type Validation**: Prevents invalid certificate configurations before CA submission
+- **Automatic SAN Baseline**: Hostname and fully-qualified domain name are always added to SANs to keep certificates usable by default
 - **Real-time Form Validation**: Inline validation with immediate feedback on all required fields
 
 ### User Experience
@@ -186,6 +187,7 @@ The application uses `appsettings.json` for configuration. All UI options are dy
 5. Add **Subject Alternative Names** (SANs):
    - Use "Add Multiple" button to paste 10+ entries at once
    - Or add one at a time with + button
+   - Hostname and FQDN are automatically included even if no extra SANs are added
 6. Set **PFX Password**:
    - Use Generate button for strong password (recommended)
    - Watch visual strength meter update in real-time
