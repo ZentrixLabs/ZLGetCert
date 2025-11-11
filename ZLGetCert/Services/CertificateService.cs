@@ -67,6 +67,62 @@ namespace ZLGetCert.Services
         }
 
         /// <summary>
+        /// Ensure that the minimum required DNS SAN entries are present.
+        /// Always includes the FQDN and HostName (short name) when valid.
+        /// </summary>
+        /// <param name="request">Certificate request to modify.</param>
+        private void EnsureDefaultSans(CertificateRequest request)
+        {
+            if (request == null)
+                return;
+
+            if (request.DnsSans == null)
+            {
+                request.DnsSans = new List<SanEntry>();
+            }
+
+            var dnsSet = new HashSet<string>(
+                request.DnsSans
+                    .Where(s => s != null && !string.IsNullOrWhiteSpace(s.Value))
+                    .Select(s => s.Value.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+
+            void AddDnsIfMissing(string candidate)
+            {
+                if (string.IsNullOrWhiteSpace(candidate))
+                    return;
+
+                var trimmed = candidate.Trim();
+
+                bool isWildcard = trimmed.StartsWith("*.", StringComparison.Ordinal) &&
+                                  trimmed.Length > 2 &&
+                                  ValidationHelper.IsValidDnsName(trimmed.Substring(2));
+
+                if (!ValidationHelper.IsValidDnsName(trimmed) && !isWildcard)
+                    return;
+
+                if (dnsSet.Add(trimmed))
+                {
+                    request.DnsSans.Add(new SanEntry
+                    {
+                        Type = SanType.DNS,
+                        Value = trimmed
+                    });
+                }
+            }
+
+            // Always include the full domain name first.
+            AddDnsIfMissing(request.FQDN);
+
+            // Include the short hostname if it differs from the FQDN.
+            if (!string.IsNullOrWhiteSpace(request.HostName) &&
+                !string.Equals(request.HostName.Trim(), request.FQDN?.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                AddDnsIfMissing(request.HostName);
+            }
+        }
+
+        /// <summary>
         /// Validate certificate template name to prevent command injection
         /// </summary>
         private static string ValidateTemplateName(string templateName, string parameterName)
@@ -699,6 +755,8 @@ namespace ZLGetCert.Services
         /// </summary>
         private string GenerateInfContent(Models.CertificateRequest request, AppConfiguration config)
         {
+            EnsureDefaultSans(request);
+
             var sb = new StringBuilder();
             sb.AppendLine("[Version]");
             sb.AppendLine("Signature=$Windows NT$");
