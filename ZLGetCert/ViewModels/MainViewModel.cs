@@ -381,8 +381,25 @@ namespace ZLGetCert.ViewModels
                 if (certificate.IsValid)
                 {
                     CurrentCertificate = certificate;
-                    SetStatus($"✓ Certificate generated successfully! Saved to: {certificate.PfxPath}", StatusMessageType.Success);
-                    _logger.LogInfo("Certificate generated successfully: {0}", certificate.Thumbprint);
+
+                    if (string.IsNullOrWhiteSpace(certificate.PfxPath))
+                    {
+                        var savePath = !string.IsNullOrWhiteSpace(certificate.CerPath)
+                            ? certificate.CerPath
+                            : "(see logs for location)";
+
+                        SetStatus(
+                            $"✓ Certificate retrieved successfully (CSR import). Saved to: {savePath}. " +
+                            "No PFX was created because the private key stays on the system that generated the CSR.",
+                            StatusMessageType.Success);
+
+                        _logger.LogWarning("Certificate imported from CSR without private key. CER saved to: {0}", savePath);
+                    }
+                    else
+                    {
+                        SetStatus($"✓ Certificate generated successfully! Saved to: {certificate.PfxPath}", StatusMessageType.Success);
+                        _logger.LogInfo("Certificate generated successfully: {0}", certificate.Thumbprint);
+                    }
                 }
                 else
                 {

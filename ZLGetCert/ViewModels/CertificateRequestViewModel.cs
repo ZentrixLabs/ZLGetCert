@@ -331,11 +331,20 @@ namespace ZLGetCert.ViewModels
             get => _csrFilePath;
             set
             {
-                SetProperty(ref _csrFilePath, value);
-                OnPropertyChanged(nameof(CanGenerate));
-                OnPropertyChanged(nameof(IsCSRWorkflow));
-                OnPropertyChanged(nameof(ValidationSummary));
-                OnPropertyChanged(nameof(HasValidationErrors));
+                if (SetProperty(ref _csrFilePath, value))
+                {
+                    OnPropertyChanged(nameof(CanGenerate));
+                    OnPropertyChanged(nameof(IsCSRWorkflow));
+                    OnPropertyChanged(nameof(HostNameError));
+                    OnPropertyChanged(nameof(LocationError));
+                    OnPropertyChanged(nameof(StateError));
+                    OnPropertyChanged(nameof(ShowHostnameFields));
+                    OnPropertyChanged(nameof(ShowWildcardOption));
+                    OnPropertyChanged(nameof(ValidationSummary));
+                    OnPropertyChanged(nameof(HasValidationErrors));
+                    OnPropertyChanged(nameof(FqdnTooltip));
+                    OnPropertyChanged(nameof(CertificateSubjectPreview));
+                }
             }
         }
 
@@ -473,6 +482,9 @@ namespace ZLGetCert.ViewModels
         {
             get
             {
+                if (IsCSRWorkflow)
+                    return false;
+
                 var type = Type;
                 return type == CertificateType.Standard || type == CertificateType.Wildcard;
             }
@@ -485,6 +497,9 @@ namespace ZLGetCert.ViewModels
         {
             get
             {
+                if (IsCSRWorkflow)
+                    return false;
+
                 var type = Type;
                 return type == CertificateType.Standard || type == CertificateType.Wildcard;
             }

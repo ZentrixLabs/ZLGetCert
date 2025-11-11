@@ -50,7 +50,7 @@ pwsh ./scripts/sign-app.ps1 -ExePath "path\to\ZLGetCert.exe"
 
 ### `release.ps1`
 
-Orchestrates the complete release workflow: version update, building, signing (optional), and GitHub release.
+Orchestrates the complete release workflow: version update, building, signing (optional), installer compilation, and GitHub release.
 
 **Usage:**
 ```powershell
@@ -62,15 +62,21 @@ pwsh ./scripts/release.ps1 -Version 1.8.2 -Sign
 
 # Draft release (don't publish immediately)
 pwsh ./scripts/release.ps1 -Version 1.8.2 -Sign -Draft
+
+# Fully automated build + installer compile
+pwsh ./scripts/release.ps1 -Version 1.8.2 -Sign -Auto
+
+# Auto build only (explicit MSBuild path)
+pwsh ./scripts/release.ps1 -Version 1.8.2 -Sign -AutoBuild -MSBuildPath "C:\VS\MSBuild\Current\Bin\MSBuild.exe"
 ```
 
 **What it does:**
 1. Updates version in AssemblyInfo and ISS files
-2. Prompts you to build in Visual Studio
-3. Optionally signs the exe (if `-Sign` is provided)
-4. Prompts you to compile installer in Inno Setup GUI
+2. Builds automatically with MSBuild when `-Auto`/`-AutoBuild` are supplied (otherwise prompts for Visual Studio build)
+3. Optionally signs the exe (if `-Sign` is provided). Uses `SignAppSSLdotCom` when available; falls back to `sign-app.ps1`
+4. Compiles installer with Inno Setup CLI when `-Auto`/`-AutoInstaller` are supplied (otherwise prompts for Inno Setup GUI). Pass explicit `-InnoSetupPath` if ISCC.exe isn't on default path
 5. Creates checksum file
-6. Uploads to GitHub release
+6. Uploads to GitHub release (supports `-Draft`)
 
 ### `upload-release.ps1`
 
@@ -97,19 +103,18 @@ pwsh ./scripts/upload-release.ps1 -Version 1.8.2 -InstallerPath "artifacts\ZLGet
 ### Production Release (With Signing)
 
 ```powershell
-# Set your cert thumbprint (one-time, or use environment variable)
-$env:CODESIGN_CERT_SHA1 = "YOUR_THUMBPRINT_HERE"
+# Ensure your SignAppSSLdotCom function or environment variables are ready
 
-# Run the release orchestrator
-pwsh ./scripts/release.ps1 -Version 1.8.2 -Sign
+# Run the release orchestrator (fully automated)
+pwsh ./scripts/release.ps1 -Version 1.8.2 -Sign -Auto
 ```
 
 The script will:
 1. Update versions
-2. Wait for you to build in VS
-3. Sign the exe with your YubiKey
-4. Wait for you to compile in Inno Setup (which signs the installer)
-5. Upload to GitHub
+2. Build via MSBuild (falls back to VS prompt if MSBuild not found)
+3. Sign the exe (prefers `SignAppSSLdotCom`, falls back to `sign-app.ps1` if unavailable or it errors)
+4. Compile the installer with Inno Setup CLI and re-sign the output if necessary
+5. Upload to GitHub (pass `-Draft` to keep it unpublished)
 
 ### Manual Step-by-Step
 
@@ -128,7 +133,7 @@ pwsh ./scripts/sign-app.ps1
 # (opens ZLGetCertSetup.iss, compiler signs installer automatically)
 
 # 5. Upload to GitHub
-pwsh ./scripts/upload-release.ps1 -Version 1.8.2
+pwsh ./scripts/upload-release.ps1 -Version 1.8.2 [-Draft]
 ```
 
 ## Inno Setup Signing
@@ -180,7 +185,7 @@ Install Windows 10/11 SDK from Microsoft. The script will auto-detect the latest
 ## Notes
 
 - Each script does one thing well
-- Manual steps (VS build, Inno compile) are intentional - gives you control
-- Matching SrtExtractor's proven workflow
+- Manual steps remain the default (Visual Studio build, Inno GUI), but `-Auto` switches enable full automation when MSBuild/ISCC are installed
+- Matching SrtExtractor's proven workflow while allowing incremental automation
 - No GitHub Actions - all releases are manual and local
 

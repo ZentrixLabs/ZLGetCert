@@ -45,7 +45,7 @@ namespace ZLGetCert.Services
 
             // If the argument contains spaces, quotes, or special characters, wrap it in quotes
             // and escape any internal quotes
-            if (argument.Contains(" ") || argument.Contains("\"") || argument.Contains("\t"))
+            if (argument.IndexOfAny(new[] { ' ', '"', '\t', ':' }) >= 0)
             {
                 // Escape backslashes that precede quotes
                 argument = argument.Replace("\\\"", "\\\\\"");
@@ -64,6 +64,34 @@ namespace ZLGetCert.Services
         private string BuildArgumentString(params string[] arguments)
         {
             return string.Join(" ", arguments.Select(EscapeArgument));
+        }
+
+        /// <summary>
+        /// Validate certificate template name to prevent command injection
+        /// </summary>
+        private static string ValidateTemplateName(string templateName, string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(templateName))
+                throw new ArgumentException($"{parameterName} cannot be empty", parameterName);
+
+            // SECURITY: Allow only safe characters (letters, numbers, space, underscore, hyphen)
+            var regex = new Regex(@"^[a-zA-Z0-9_\-\s]+$");
+            if (!regex.IsMatch(templateName))
+            {
+                throw new ArgumentException(
+                    $"{parameterName} contains invalid characters. " +
+                    "Template names should only contain letters, numbers, spaces, underscores, and hyphens.",
+                    parameterName);
+            }
+
+            if (templateName.Length > 100)
+            {
+                throw new ArgumentException(
+                    $"{parameterName} exceeds maximum length of 100 characters",
+                    parameterName);
+            }
+
+            return templateName;
         }
 
         /// <summary>
@@ -608,7 +636,7 @@ namespace ZLGetCert.Services
             }
 
             // Submit to CA
-            if (!SubmitToCA(filePaths.CsrPath, filePaths.CerPath, filePaths.PfxPath, request.CAServer))
+            if (!SubmitToCA(filePaths.CsrPath, filePaths.CerPath, filePaths.PfxPath, request.CAServer, request.Template))
             {
                 return new CertificateInfo { IsValid = false, ErrorMessage = "Failed to submit to CA" };
             }
@@ -635,7 +663,7 @@ namespace ZLGetCert.Services
             }
 
             // Submit to CA
-            if (!SubmitToCA(filePaths.CsrPath, filePaths.CerPath, filePaths.PfxPath, request.CAServer))
+            if (!SubmitToCA(filePaths.CsrPath, filePaths.CerPath, filePaths.PfxPath, request.CAServer, request.Template))
             {
                 return new CertificateInfo { IsValid = false, ErrorMessage = "Failed to submit to CA" };
             }
@@ -657,7 +685,7 @@ namespace ZLGetCert.Services
             }
 
             // Submit existing CSR to CA
-            if (!SubmitToCA(request.CsrFilePath, filePaths.CerPath, filePaths.PfxPath, request.CAServer))
+            if (!SubmitToCA(request.CsrFilePath, filePaths.CerPath, filePaths.PfxPath, request.CAServer, request.Template))
             {
                 return new CertificateInfo { IsValid = false, ErrorMessage = "Failed to submit CSR to CA" };
             }
@@ -715,7 +743,7 @@ namespace ZLGetCert.Services
 
             sb.AppendLine();
             sb.AppendLine("[RequestAttributes]");
-            sb.AppendLine($"CertificateTemplate= {request.Template}");
+            sb.AppendLine($"CertificateTemplate={request.Template}");
 
             return sb.ToString();
         }
@@ -830,7 +858,7 @@ namespace ZLGetCert.Services
         /// <summary>
         /// Submit CSR to CA
         /// </summary>
-        private bool SubmitToCA(string csrPath, string cerPath, string pfxPath, string caServer)
+        private bool SubmitToCA(string csrPath, string cerPath, string pfxPath, string caServer, string template)
         {
             try
             {
@@ -840,15 +868,42 @@ namespace ZLGetCert.Services
                 cerPath = ProcessArgumentValidator.ValidateFilePath(cerPath, "CER Path");
                 pfxPath = ProcessArgumentValidator.ValidateFilePath(pfxPath, "PFX Path");
 
+                template = template?.Trim();
+                if (string.IsNullOrEmpty(template))
+                {
+                    _logger.LogError("Certificate template is required for CA submission but was empty or whitespace.");
+                    return false;
+                }
+
+                string templateAttribute = null;
+
+                template = ValidateTemplateName(template, "Certificate Template");
+                templateAttribute = $"CertificateTemplate:{template}";
+                _logger.LogDebug("Using certificate template '{0}' for CA submission", template);
+
                 var caConfig = $"{caServer}\\{caServer.Split('.')[0].ToUpper()}";
-                
+
+                var argumentList = new List<string> { "-config", caConfig, "-submit" };
+                if (!string.IsNullOrEmpty(templateAttribute))
+                {
+                    argumentList.Add("-attrib");
+                    argumentList.Add(templateAttribute);
+                }
+                argumentList.Add(csrPath);
+                argumentList.Add(cerPath);
+                argumentList.Add(pfxPath);
+
+                var argumentString = BuildArgumentString(argumentList.ToArray());
+
+                _logger.LogDebug("certreq.exe arguments: {0}", argumentString);
+
                 var process = new Process
                 {
                     StartInfo = new ProcessStartInfo
                     {
                         FileName = "certreq.exe",
                         // SECURITY: Use BuildArgumentString to safely escape all arguments
-                        Arguments = BuildArgumentString("-config", caConfig, "-submit", csrPath, cerPath, pfxPath),
+                        Arguments = argumentString,
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
@@ -903,11 +958,31 @@ namespace ZLGetCert.Services
         {
             try
             {
+                // Load expected certificate from CER file for thumbprint matching
+                string expectedThumbprint = null;
+                X509Certificate2 expectedCertificate = null;
+                try
+                {
+                    expectedCertificate = new X509Certificate2(filePaths.CerPath);
+                    expectedThumbprint = expectedCertificate.Thumbprint;
+                    _logger.LogDebug("Expected certificate thumbprint: {0}", expectedThumbprint);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Unable to load certificate from CER path for thumbprint matching: {0}", ex.Message);
+                }
+
                 // Import certificate to store
                 ImportCertificate(filePaths.CerPath);
 
                 // Find certificate in store
-                var cert = FindCertificateInStore(request);
+                var cert = FindCertificateInStore(request, expectedThumbprint);
+                if (cert == null && expectedCertificate != null)
+                {
+                    _logger.LogWarning("Certificate not located in store using thumbprint. Falling back to CER file instance.");
+                    cert = expectedCertificate;
+                }
+
                 if (cert == null)
                 {
                     return new CertificateInfo { IsValid = false, ErrorMessage = "Certificate not found in store" };
@@ -917,7 +992,13 @@ namespace ZLGetCert.Services
                 RepairCertificate(cert.Thumbprint);
 
                 // Re-find the certificate after repair to get the one with private key
-                cert = FindCertificateInStore(request);
+                cert = FindCertificateInStore(request, expectedThumbprint);
+                if (cert == null && expectedCertificate != null)
+                {
+                    _logger.LogWarning("Certificate still not found after repair. Using CER file instance as fallback.");
+                    cert = expectedCertificate;
+                }
+
                 if (cert == null)
                 {
                     return new CertificateInfo { IsValid = false, ErrorMessage = "Certificate not found in store after repair" };
@@ -926,6 +1007,26 @@ namespace ZLGetCert.Services
                 // Check if certificate has private key
                 if (!cert.HasPrivateKey)
                 {
+                    if (request.Type == CertificateType.FromCSR)
+                    {
+                        _logger.LogWarning("CSR import certificate does not include a private key on this machine. Returning CER file only.");
+
+                        var csrCertInfo = CertificateInfo.FromX509Certificate(cert);
+                        csrCertInfo.CerPath = filePaths.CerPath;
+                        csrCertInfo.PfxPath = string.Empty;
+                        csrCertInfo.PemPath = string.Empty;
+                        csrCertInfo.KeyPath = string.Empty;
+                        request.ExtractPemKey = false;
+                        request.ExtractCaBundle = false;
+
+                        if (config.DefaultSettings.AutoCleanup)
+                        {
+                            CleanupTemporaryFiles(filePaths);
+                        }
+
+                        return csrCertInfo;
+                    }
+
                     _logger.LogError("Certificate does not have private key after repair. Thumbprint: {0}", cert.Thumbprint);
                     return new CertificateInfo { IsValid = false, ErrorMessage = "Certificate does not contain a private key. This may be due to certificate store issues or the certificate not being properly associated with the private key." };
                 }
@@ -978,32 +1079,50 @@ namespace ZLGetCert.Services
         /// <summary>
         /// Find certificate in store
         /// </summary>
-        private X509Certificate2 FindCertificateInStore(Models.CertificateRequest request)
+        private X509Certificate2 FindCertificateInStore(Models.CertificateRequest request, string expectedThumbprint = null)
         {
             try
             {
-                var store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
-                store.Open(OpenFlags.ReadOnly);
-
-                // First try to find a certificate with private key
-                var certWithKey = store.Certificates.Cast<X509Certificate2>()
-                    .FirstOrDefault(c => (c.Subject.Contains(request.FQDN) || 
-                                        (request.Type == CertificateType.Wildcard && c.Subject.Contains("*.example.com"))) &&
-                                       c.HasPrivateKey);
-
-                // If no certificate with private key found, try any certificate matching the subject
-                var cert = certWithKey ?? store.Certificates.Cast<X509Certificate2>()
-                    .FirstOrDefault(c => c.Subject.Contains(request.FQDN) || 
-                                       (request.Type == CertificateType.Wildcard && c.Subject.Contains("*.example.com")));
-
-                store.Close();
-                
-                if (cert != null)
+                using (var store = new X509Store(StoreName.My, StoreLocation.LocalMachine))
                 {
-                    _logger.LogInfo("Found certificate in store: {0}, HasPrivateKey: {1}", cert.Subject, cert.HasPrivateKey);
+                    store.Open(OpenFlags.ReadOnly);
+                    var certificates = store.Certificates.Cast<X509Certificate2>().ToList();
+
+                    // Match by thumbprint when available
+                    if (!string.IsNullOrEmpty(expectedThumbprint))
+                    {
+                        var thumbprintMatch = certificates.FirstOrDefault(c =>
+                            string.Equals(c.Thumbprint, expectedThumbprint, StringComparison.OrdinalIgnoreCase));
+                        if (thumbprintMatch != null)
+                        {
+                            _logger.LogInfo("Found certificate by thumbprint: {0}, HasPrivateKey: {1}", thumbprintMatch.Subject, thumbprintMatch.HasPrivateKey);
+                            return thumbprintMatch;
+                        }
+                    }
+
+                    // Build search terms based on request data
+                    var searchTerms = new List<string>();
+                    if (!string.IsNullOrWhiteSpace(request.FQDN))
+                        searchTerms.Add(request.FQDN);
+                    if (!string.IsNullOrWhiteSpace(request.HostName))
+                        searchTerms.Add(request.HostName);
+                    if (request.Type == CertificateType.Wildcard && !string.IsNullOrWhiteSpace(request.Company))
+                        searchTerms.Add($"*.{request.Company}");
+
+                    foreach (var term in searchTerms)
+                    {
+                        var match = certificates.FirstOrDefault(c =>
+                            c.Subject?.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0);
+                        if (match != null)
+                        {
+                            _logger.LogInfo("Found certificate by subject term '{0}': {1}, HasPrivateKey: {2}", term, match.Subject, match.HasPrivateKey);
+                            return match;
+                        }
+                    }
+
+                    _logger.LogWarning("Certificate not found in store using thumbprint or subject terms.");
+                    return null;
                 }
-                
-                return cert;
             }
             catch (Exception ex)
             {

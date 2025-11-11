@@ -2,7 +2,8 @@
 param(
     [Parameter(Mandatory=$true)][string]$Version,
     [string]$InstallerPath = "artifacts\ZLGetCertInstaller.exe",
-    [string]$Notes = "Signed release $Version"
+    [string]$Notes = "Signed release $Version",
+    [switch]$Draft
 )
 
 $ErrorActionPreference = "Stop"
@@ -101,7 +102,17 @@ if ($releaseExists) {
     gh release upload $tag "$installer" "$shaFile" --clobber
 } else {
     Write-Host "Creating release $tag and uploading assets." -ForegroundColor Yellow
-    gh release create $tag "$installer" "$shaFile" --title "ZLGetCert $tag" --notes "$Notes"
+    $createArgs = @(
+        $tag,
+        "$installer",
+        "$shaFile",
+        "--title", "ZLGetCert $tag",
+        "--notes", "$Notes"
+    )
+    if ($Draft) {
+        $createArgs += "--draft"
+    }
+    gh release create @createArgs
 }
 
 Write-Host "Release $tag published successfully." -ForegroundColor Green

@@ -3,7 +3,7 @@
 
 #define MyAppName "ZLGetCert"
 #ifndef MyAppVersion
-#define MyAppVersion "1.8.3"
+#define MyAppVersion "1.8.5"
 #endif
 #ifndef EnableSigning
 #define EnableSigning "1"
@@ -64,6 +64,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 ; Sign the main application executable
 Source: "{#ZLGetCertBin}\ZLGetCert.exe"; DestDir: "{app}"; Flags: ignoreversion
+; Distribute application icon for shortcuts and control panel
+Source: "ZLGetCert_icon_v2.ico"; DestDir: "{app}"; Flags: ignoreversion
 ; Include the rest of the build output
 Source: "{#ZLGetCertBin}\*"; Excludes: "ZLGetCert.exe"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
