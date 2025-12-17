@@ -626,6 +626,13 @@ namespace ZLGetCert.Services
 
                 var certificateInfo = new CertificateInfo();
 
+                // Remove any existing certificates with the same hostname/FQDN to prevent
+                // duplicate certificate issues that can cause SAN mismatch in the exported PFX
+                if (request.Type != CertificateType.FromCSR)
+                {
+                    RemoveDuplicateCertificates(request.HostName, request.FQDN);
+                }
+
                 // Ensure certificate folder exists
                 if (!Directory.Exists(config.FilePaths.CertificateFolder))
                 {
@@ -1093,6 +1100,37 @@ namespace ZLGetCert.Services
                 var password = GetPasswordFromSecureString(request.PfxPassword);
                 ExportPfxCertificate(cert, filePaths.PfxPath, password);
 
+                // VALIDATION: Verify the exported PFX has the same thumbprint as the CER
+                // This catches cases where the wrong certificate was found in the store
+                if (!string.IsNullOrEmpty(expectedThumbprint))
+                {
+                    try
+                    {
+                        var pfxCert = new X509Certificate2(filePaths.PfxPath, password);
+                        if (!string.Equals(pfxCert.Thumbprint, expectedThumbprint, StringComparison.OrdinalIgnoreCase))
+                        {
+                            _logger.LogError(
+                                "CRITICAL: PFX thumbprint mismatch! Expected: {0}, Got: {1}. " +
+                                "This indicates the wrong certificate was exported. " +
+                                "Check for duplicate certificates in the store with the same hostname.",
+                                expectedThumbprint, pfxCert.Thumbprint);
+                            
+                            return new CertificateInfo 
+                            { 
+                                IsValid = false, 
+                                ErrorMessage = "Certificate export failed: PFX does not match the issued certificate (thumbprint mismatch). " +
+                                               "There may be duplicate certificates in the store with the same hostname. " +
+                                               "Please remove old certificates from the LocalMachine\\My store and try again."
+                            };
+                        }
+                        _logger.LogInfo("PFX thumbprint verified successfully: {0}", pfxCert.Thumbprint);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning("Unable to verify PFX thumbprint: {0}", ex.Message);
+                    }
+                }
+
                 // Create certificate info
                 var certInfo = CertificateInfo.FromX509Certificate(cert);
                 certInfo.PfxPath = filePaths.PfxPath;
@@ -1110,6 +1148,54 @@ namespace ZLGetCert.Services
             {
                 _logger.LogError(ex, "Error processing certificate");
                 return new CertificateInfo { IsValid = false, ErrorMessage = ex.Message };
+            }
+        }
+
+        /// <summary>
+        /// Remove existing certificates with the same subject to prevent duplicates
+        /// that could cause SAN mismatch issues when exporting PFX
+        /// </summary>
+        /// <param name="hostname">The hostname to match</param>
+        /// <param name="fqdn">The FQDN to match</param>
+        private void RemoveDuplicateCertificates(string hostname, string fqdn)
+        {
+            try
+            {
+                using (var store = new X509Store(StoreName.My, StoreLocation.LocalMachine))
+                {
+                    store.Open(OpenFlags.ReadWrite);
+                    var toRemove = new List<X509Certificate2>();
+                    
+                    foreach (X509Certificate2 cert in store.Certificates)
+                    {
+                        // Check if this cert matches our hostname/FQDN in the subject
+                        bool matchesHostname = !string.IsNullOrWhiteSpace(hostname) && 
+                            cert.Subject?.IndexOf(hostname, StringComparison.OrdinalIgnoreCase) >= 0;
+                        bool matchesFqdn = !string.IsNullOrWhiteSpace(fqdn) && 
+                            cert.Subject?.IndexOf(fqdn, StringComparison.OrdinalIgnoreCase) >= 0;
+                        
+                        if (matchesHostname || matchesFqdn)
+                        {
+                            toRemove.Add(cert);
+                        }
+                    }
+
+                    foreach (var cert in toRemove)
+                    {
+                        _logger.LogInfo("Removing existing certificate to prevent duplicates: {0} (Thumbprint: {1}, Expires: {2})", 
+                            cert.Subject, cert.Thumbprint, cert.NotAfter.ToString("yyyy-MM-dd"));
+                        store.Remove(cert);
+                    }
+                    
+                    if (toRemove.Count > 0)
+                    {
+                        _logger.LogInfo("Removed {0} existing certificate(s) to prevent SAN mismatch issues", toRemove.Count);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Error removing duplicate certificates (continuing anyway): {0}", ex.Message);
             }
         }
 
@@ -1146,7 +1232,7 @@ namespace ZLGetCert.Services
                     store.Open(OpenFlags.ReadOnly);
                     var certificates = store.Certificates.Cast<X509Certificate2>().ToList();
 
-                    // Match by thumbprint when available
+                    // Match by thumbprint when available - this is the authoritative match
                     if (!string.IsNullOrEmpty(expectedThumbprint))
                     {
                         var thumbprintMatch = certificates.FirstOrDefault(c =>
@@ -1156,9 +1242,16 @@ namespace ZLGetCert.Services
                             _logger.LogInfo("Found certificate by thumbprint: {0}, HasPrivateKey: {1}", thumbprintMatch.Subject, thumbprintMatch.HasPrivateKey);
                             return thumbprintMatch;
                         }
+                        
+                        // CRITICAL FIX: If we have an expected thumbprint but couldn't find it,
+                        // DO NOT fall back to subject search - this prevents returning a different
+                        // certificate (e.g., an older cert with same hostname but different SANs)
+                        _logger.LogWarning("Certificate with expected thumbprint {0} not found in store. Not falling back to subject search to prevent SAN mismatch.", expectedThumbprint);
+                        return null;
                     }
 
-                    // Build search terms based on request data
+                    // Only use subject-based search when no thumbprint is provided (legacy behavior)
+                    _logger.LogInfo("No expected thumbprint provided, using subject-based search");
                     var searchTerms = new List<string>();
                     if (!string.IsNullOrWhiteSpace(request.FQDN))
                         searchTerms.Add(request.FQDN);

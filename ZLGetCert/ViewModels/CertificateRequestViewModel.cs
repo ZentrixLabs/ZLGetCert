@@ -927,6 +927,13 @@ namespace ZLGetCert.ViewModels
             if (string.IsNullOrWhiteSpace(multilineText))
                 return 0;
 
+            // Remove any existing empty entries before adding bulk entries
+            var emptyEntries = DnsSans.Where(s => string.IsNullOrWhiteSpace(s.Value)).ToList();
+            foreach (var empty in emptyEntries)
+            {
+                DnsSans.Remove(empty);
+            }
+
             var lines = multilineText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             int addedCount = 0;
 
@@ -956,6 +963,13 @@ namespace ZLGetCert.ViewModels
         {
             if (string.IsNullOrWhiteSpace(multilineText))
                 return 0;
+
+            // Remove any existing empty entries before adding bulk entries
+            var emptyEntries = IpSans.Where(s => string.IsNullOrWhiteSpace(s.Value)).ToList();
+            foreach (var empty in emptyEntries)
+            {
+                IpSans.Remove(empty);
+            }
 
             var lines = multilineText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             int addedCount = 0;

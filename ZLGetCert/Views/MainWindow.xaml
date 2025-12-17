@@ -1067,44 +1067,6 @@
                             </TextBlock>
                         </StackPanel>
                     </Border>
-                    
-                    <!-- Generate Certificate Button - Bottom of Form -->
-                    <Border Style="{StaticResource CardStyle}" Background="#F8F9FA">
-                        <StackPanel>
-                            <TextBlock Text="Ready to Generate?" 
-                                       Style="{StaticResource SectionHeaderStyle}"
-                                       Foreground="#28A745"/>
-                            
-                            <Button Command="{Binding GenerateCertificateCommand}"
-                                    IsEnabled="{Binding CertificateRequest.CanGenerate}"
-                                    Style="{StaticResource PrimaryButtonStyle}"
-                                    ToolTip="Generate the certificate with the settings above (Alt+G)"
-                                    FontSize="16"
-                                    Padding="24,12"
-                                    FontWeight="Bold"
-                                    HorizontalAlignment="Stretch"
-                                    Margin="0,5,0,5">
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <TextBlock Text="{StaticResource Icon.Certificate}" Style="{StaticResource FontAwesomeIconLargeStyle}" Margin="0,0,10,0"/>
-                                    <TextBlock Text="Generate Certificate" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                            
-                            <TextBlock FontSize="11" Foreground="#666666" HorizontalAlignment="Center">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Text" Value="Fill out all required fields (*) above to enable this button"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding CertificateRequest.CanGenerate}" Value="True">
-                                                <Setter Property="Text" Value="✓ All required fields complete - click to generate your certificate"/> <!-- Using checkmark for consistency -->
-                                                <Setter Property="Foreground" Value="#28A745"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </StackPanel>
-                    </Border>
                 </StackPanel>
             </ScrollViewer>
         </Grid>
