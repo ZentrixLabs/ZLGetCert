@@ -1115,6 +1115,50 @@ namespace ZLGetCert.ViewModels
 
             // Update tooltip when FQDN changes
             OnPropertyChanged(nameof(FqdnTooltip));
+            
+            // Update DNS SANs to include hostname and FQDN so user can see what will be added
+            UpdateDefaultDnsSans();
+        }
+
+        /// <summary>
+        /// Update DNS SANs to include hostname and FQDN as the first entries.
+        /// This makes it visible to the user what SANs will be included in the certificate.
+        /// </summary>
+        private void UpdateDefaultDnsSans()
+        {
+            // Skip if in CSR workflow (CSR has its own SANs)
+            if (IsCSRWorkflow)
+                return;
+
+            // Get current values
+            var hostname = HostName?.Trim();
+            var fqdn = FQDN?.Trim();
+
+            // Helper to check if a value already exists in DnsSans
+            bool ExistsInSans(string value)
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                    return true; // Treat empty as "exists" so we don't add it
+                return DnsSans.Any(s => string.Equals(s.Value?.Trim(), value, StringComparison.OrdinalIgnoreCase));
+            }
+
+            // Helper to add at beginning if not exists
+            void AddIfMissing(string value)
+            {
+                if (!string.IsNullOrWhiteSpace(value) && !ExistsInSans(value))
+                {
+                    // Insert at the beginning so default SANs appear first
+                    DnsSans.Insert(0, new SanEntry { Type = SanType.DNS, Value = value });
+                }
+            }
+
+            // Add FQDN first, then hostname (insertion at 0 reverses order, so FQDN ends up first)
+            if (!string.IsNullOrWhiteSpace(hostname) && 
+                !string.Equals(hostname, fqdn, StringComparison.OrdinalIgnoreCase))
+            {
+                AddIfMissing(hostname);
+            }
+            AddIfMissing(fqdn);
         }
 
         /// <summary>
