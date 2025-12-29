@@ -244,8 +244,8 @@ namespace ZentrixLabs.ZLGetCert.Cli
             // Construct ExecutionContext
             var executionContext = new ExecutionContext(request);
 
-            // Construct CertificateRequestExecutor with placeholder stub services
-            var caClient = new StubCertificateAuthorityClient();
+            // Construct CertificateRequestExecutor with real CA client and placeholder stub services
+            var caClient = new ZentrixLabs.ZLGetCert.Core.Services.Adcs.CertReqCertificateAuthorityClient();
             var exportService = new StubExportService();
             var parser = new StubCertificateParser();
             var executor = new CertificateRequestExecutor(caClient, exportService, parser);
