@@ -1,3 +1,34 @@
+# 🧭 Start Here: Structure Standard
+
+ZLGetCert is being refactored under the **BakBeatLabs Structure Standard**.
+
+This standard defines the authoritative behavior of the tool and takes precedence over all other documentation.
+
+Before reading user guides, UX notes, or development history, start here:
+
+- **docs/Structure-Standard.md**
+
+That document links to four required anchors:
+
+1. **Contract** — what ZLGetCert is allowed to do  
+2. **Doctor** — read-only preflight that blocks unsafe runs  
+3. **CLI** — the canonical reference interface  
+4. **Fixtures** — proof artifacts that enforce behavior  
+
+### Authority Rule
+
+If there is any conflict between:
+- UI behavior
+- User guides
+- Development notes
+- Implementation details
+
+**The Structure Standard wins.**
+
+The documentation below remains valuable context, but it must not override the Structure Standard.
+
+---
+
 # ZLGetCert Documentation
 
 Welcome to the ZLGetCert documentation! This directory contains comprehensive documentation for users and developers.
