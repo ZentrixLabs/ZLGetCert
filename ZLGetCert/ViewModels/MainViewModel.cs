@@ -1,5 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
 using System.Security;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,6 +11,12 @@ using ZLGetCert.Services;
 using ZLGetCert.Utilities;
 using ZLGetCert.Enums;
 using ZLGetCert.Views;
+using ZentrixLabs.ZLGetCert.Core.Contracts;
+using ZentrixLabs.ZLGetCert.Core.Doctor;
+using ZentrixLabs.ZLGetCert.Core.Pipeline;
+using ZentrixLabs.ZLGetCert.Core.Services.Adcs;
+using ZentrixLabs.ZLGetCert.Core.Services.Export;
+using ZentrixLabs.ZLGetCert.Core.Services.Parsing;
 
 namespace ZLGetCert.ViewModels
 {
@@ -349,7 +357,7 @@ namespace ZLGetCert.ViewModels
         }
 
         /// <summary>
-        /// Generate certificate
+        /// Generate certificate using Core execution path
         /// </summary>
         private async void GenerateCertificate()
         {
@@ -358,7 +366,7 @@ namespace ZLGetCert.ViewModels
                 IsGenerating = true;
                 SetStatus("Validating certificate request...", StatusMessageType.Info);
 
-                // Validate the request
+                // Validate the request (UI-level validation)
                 var validationResult = ValidationHelper.ValidateCertificateRequest(CertificateRequest.ToCertificateRequest());
                 if (!validationResult.IsValid)
                 {
@@ -366,45 +374,63 @@ namespace ZLGetCert.ViewModels
                     return;
                 }
 
-                SetStatus("Generating certificate...", StatusMessageType.Info);
+                SetStatus("Building certificate request...", StatusMessageType.Info);
                 _logger.LogInfo("Starting certificate generation for {0}", CertificateRequest.CertificateName);
 
-                // Log the request details for debugging
-                var request = CertificateRequest.ToCertificateRequest();
-                _logger.LogInfo("Certificate request details - ExtractPemKey: {0}, ExtractCaBundle: {1}", 
-                    request.ExtractPemKey, request.ExtractCaBundle);
-
-                // Generate certificate
-                var certificate = await System.Threading.Tasks.Task.Run(() => 
-                    _certificateService.GenerateCertificate(request));
-
-                if (certificate.IsValid)
+                // Build Core CertificateRequest from UI fields
+                var coreRequest = BuildCoreCertificateRequest();
+                if (coreRequest == null)
                 {
-                    CurrentCertificate = certificate;
+                    SetStatus("Failed to build certificate request", StatusMessageType.Error);
+                    return;
+                }
 
-                    if (string.IsNullOrWhiteSpace(certificate.PfxPath))
+                // Run Doctor before execution
+                SetStatus("Running pre-flight checks...", StatusMessageType.Info);
+                var doctorContext = new DoctorContext(coreRequest);
+                var doctorRunner = new DoctorRunner(DefaultDoctorChecks.Create());
+                var doctorResult = await System.Threading.Tasks.Task.Run(() => doctorRunner.Run(doctorContext));
+
+                if (doctorResult.Status == "fail")
+                {
+                    var failedChecks = doctorResult.Checks.Where(c => c.Status == "fail").ToList();
+                    var failureSummary = string.Join("\n", failedChecks.Select(c => 
+                        $"- {c.Summary} ({c.Category?.ToString() ?? "Unknown"}): {c.Remediation}"));
+                    
+                    SetStatus($"Pre-flight checks failed:\n{failureSummary}", StatusMessageType.Error);
+                    _logger.LogError("Doctor checks failed: {0} failed, {1} passed", doctorResult.Failed, doctorResult.Passed);
+                    return;
+                }
+
+                if (doctorResult.Warnings > 0)
+                {
+                    var warnings = doctorResult.Checks.Where(c => c.Status == "warn").ToList();
+                    _logger.LogWarning("Doctor checks completed with {0} warnings", doctorResult.Warnings);
+                    foreach (var warning in warnings)
                     {
-                        var savePath = !string.IsNullOrWhiteSpace(certificate.CerPath)
-                            ? certificate.CerPath
-                            : "(see logs for location)";
-
-                        SetStatus(
-                            $"✓ Certificate retrieved successfully (CSR import). Saved to: {savePath}. " +
-                            "No PFX was created because the private key stays on the system that generated the CSR.",
-                            StatusMessageType.Success);
-
-                        _logger.LogWarning("Certificate imported from CSR without private key. CER saved to: {0}", savePath);
+                        _logger.LogWarning("Doctor warning: {0} - {1}", warning.Summary, warning.Detail);
                     }
-                    else
-                    {
-                        SetStatus($"✓ Certificate generated successfully! Saved to: {certificate.PfxPath}", StatusMessageType.Success);
-                        _logger.LogInfo("Certificate generated successfully: {0}", certificate.Thumbprint);
-                    }
+                }
+
+                // Execute certificate request via Core
+                SetStatus("Generating certificate...", StatusMessageType.Info);
+                var executor = new CertificateRequestExecutor(
+                    new CertReqCertificateAuthorityClient(),
+                    new CertUtilExportService(),
+                    new X509CertificateParser()
+                );
+
+                var executionContext = new ExecutionContext(coreRequest);
+                var result = await System.Threading.Tasks.Task.Run(() => executor.Execute(executionContext));
+
+                // Display results
+                if (result.Status == "success")
+                {
+                    DisplaySuccessResult(result);
                 }
                 else
                 {
-                    SetStatus($"Certificate generation failed: {certificate.ErrorMessage}", StatusMessageType.Error);
-                    _logger.LogError("Certificate generation failed: {0}", certificate.ErrorMessage);
+                    DisplayFailureResult(result, doctorResult);
                 }
             }
             catch (Exception ex)
@@ -415,6 +441,259 @@ namespace ZLGetCert.ViewModels
             finally
             {
                 IsGenerating = false;
+            }
+        }
+
+        /// <summary>
+        /// Build Core CertificateRequest from UI fields
+        /// </summary>
+        private ZentrixLabs.ZLGetCert.Core.Contracts.CertificateRequest BuildCoreCertificateRequest()
+        {
+            try
+            {
+                var config = _configService.GetConfiguration();
+                var uiRequest = CertificateRequest.ToCertificateRequest();
+                var certName = CertificateRequest.CertificateName;
+                var certFolder = config.FilePaths.CertificateFolder;
+
+                // Ensure certificate folder exists
+                if (!Directory.Exists(certFolder))
+                {
+                    Directory.CreateDirectory(certFolder);
+                }
+
+                // Build SubjectIdentity
+                var subject = new SubjectIdentity
+                {
+                    CommonName = uiRequest.FQDN ?? uiRequest.HostName,
+                    Wildcard = CertificateRequest.IsWildcard
+                };
+
+                // Build Subject DN if we have all required fields
+                if (!string.IsNullOrWhiteSpace(uiRequest.FQDN) && 
+                    !string.IsNullOrWhiteSpace(uiRequest.Location) && 
+                    !string.IsNullOrWhiteSpace(uiRequest.State))
+                {
+                    subject.SubjectDn = $"CN={uiRequest.FQDN}, OU={uiRequest.OU}, O={uiRequest.Company}, L={uiRequest.Location}, S={uiRequest.State}, C=US";
+                }
+
+                // Build SANs list
+                var sans = new System.Collections.Generic.List<string>();
+                
+                // Add DNS SANs
+                foreach (var dns in CertificateRequest.DnsSans)
+                {
+                    if (!string.IsNullOrWhiteSpace(dns.Value))
+                    {
+                        sans.Add($"dns:{dns.Value}");
+                    }
+                }
+
+                // Add IP SANs
+                foreach (var ip in CertificateRequest.IpSans)
+                {
+                    if (!string.IsNullOrWhiteSpace(ip.Value))
+                    {
+                        sans.Add($"ip:{ip.Value}");
+                    }
+                }
+
+                subject.SubjectAlternativeNames = sans;
+
+                // Build CA target
+                var caTarget = new CaTarget
+                {
+                    CaConfig = new CaConfig
+                    {
+                        CaServer = uiRequest.CAServer
+                    },
+                    Template = uiRequest.Template
+                };
+
+                // Build CryptoProfile (use defaults from config)
+                var cryptoProfile = new CryptoProfile
+                {
+                    KeyAlgorithm = "RSA",
+                    KeySize = config.DefaultSettings.KeyLength,
+                    HashAlgorithm = config.DefaultSettings.HashAlgorithm,
+                    ExportablePrivateKey = config.CertificateParameters.Exportable
+                };
+
+                // Build ExportPlan - map export paths explicitly
+                var exportPlan = new ExportPlan();
+                
+                if (uiRequest.ExtractPemKey)
+                {
+                    exportPlan.LeafPem = new ExportTarget
+                    {
+                        Enabled = true,
+                        Path = Path.Combine(certFolder, $"{certName}.pem")
+                    };
+                    exportPlan.KeyPem = new ExportTarget
+                    {
+                        Enabled = true,
+                        Path = Path.Combine(certFolder, $"{certName}.key")
+                    };
+                }
+
+                if (uiRequest.ExtractCaBundle)
+                {
+                    exportPlan.CaBundlePem = new ExportTarget
+                    {
+                        Enabled = true,
+                        Path = Path.Combine(certFolder, "ca-bundle.pem")
+                    };
+                }
+
+                // Determine request mode
+                var mode = RequestMode.NewKeypair;
+                if (uiRequest.Type == CertificateType.FromCSR && !string.IsNullOrWhiteSpace(uiRequest.CsrFilePath))
+                {
+                    mode = RequestMode.SignExistingCsr;
+                }
+
+                // Build the Core request
+                var coreRequest = new ZentrixLabs.ZLGetCert.Core.Contracts.CertificateRequest
+                {
+                    RequestId = Guid.NewGuid().ToString(),
+                    OutputFormat = "text",
+                    Subject = subject,
+                    Mode = mode,
+                    CsrPath = mode == RequestMode.SignExistingCsr ? uiRequest.CsrFilePath : null,
+                    Ca = caTarget,
+                    Crypto = cryptoProfile,
+                    AuthMode = "currentUser",
+                    Exports = exportPlan,
+                    Overwrite = false
+                };
+
+                return coreRequest;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error building Core certificate request");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Display success result from Core execution
+        /// </summary>
+        private void DisplaySuccessResult(CertificateResult result)
+        {
+            try
+            {
+                var cert = result.Certificate;
+                if (cert != null)
+                {
+                    // Create CertificateInfo for UI binding
+                    CurrentCertificate = new CertificateInfo
+                    {
+                        Thumbprint = cert.Thumbprint,
+                        Subject = cert.Subject,
+                        Issuer = cert.Issuer,
+                        NotBefore = cert.NotBefore ?? DateTime.MinValue,
+                        NotAfter = cert.NotAfter ?? DateTime.MinValue,
+                        SerialNumber = cert.SerialNumber,
+                        IsValid = true
+                    };
+
+                    // Build success message
+                    var messageParts = new System.Collections.Generic.List<string>
+                    {
+                        $"✓ Certificate generated successfully!"
+                    };
+
+                    if (cert.NotBefore.HasValue && cert.NotAfter.HasValue)
+                    {
+                        messageParts.Add($"Valid from {cert.NotBefore.Value:yyyy-MM-dd} to {cert.NotAfter.Value:yyyy-MM-dd}");
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(cert.Thumbprint))
+                    {
+                        messageParts.Add($"Thumbprint: {cert.Thumbprint}");
+                    }
+
+                    // List exported artifacts
+                    if (result.Artifacts?.Exported != null && result.Artifacts.Exported.Count > 0)
+                    {
+                        var exportedFiles = result.Artifacts.Exported
+                            .Where(a => a.Written)
+                            .Select(a => a.Path)
+                            .ToList();
+                        
+                        if (exportedFiles.Count > 0)
+                        {
+                            messageParts.Add($"Exported: {string.Join(", ", exportedFiles)}");
+                        }
+                    }
+
+                    // Show invariant failures if any
+                    if (result.Invariants != null && result.Invariants.Any(i => !i.Ok))
+                    {
+                        var failures = result.Invariants.Where(i => !i.Ok).Select(i => $"{i.Name}: {i.Detail}").ToList();
+                        messageParts.Add($"Warnings: {string.Join("; ", failures)}");
+                    }
+
+                    SetStatus(string.Join("\n", messageParts), StatusMessageType.Success);
+                    _logger.LogInfo("Certificate generated successfully: {0}", cert.Thumbprint);
+                }
+                else
+                {
+                    SetStatus("Certificate generated but details unavailable", StatusMessageType.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error displaying success result");
+                SetStatus("Certificate generated but error displaying details", StatusMessageType.Warning);
+            }
+        }
+
+        /// <summary>
+        /// Display failure result from Core execution
+        /// </summary>
+        private void DisplayFailureResult(CertificateResult result, DoctorResult doctorResult)
+        {
+            try
+            {
+                var messageParts = new System.Collections.Generic.List<string>
+                {
+                    $"Certificate generation failed: {result.Message}"
+                };
+
+                if (result.FailureCategory.HasValue)
+                {
+                    messageParts.Add($"Category: {result.FailureCategory.Value}");
+                }
+
+                // Show artifacts if any were written
+                if (result.Artifacts?.Exported != null && result.Artifacts.Exported.Count > 0)
+                {
+                    var written = result.Artifacts.Exported.Where(a => a.Written).Select(a => a.Path).ToList();
+                    if (written.Count > 0)
+                    {
+                        messageParts.Add($"Artifacts written: {string.Join(", ", written)}");
+                    }
+                }
+
+                // Show doctor failures if doctor blocked it
+                if (doctorResult != null && doctorResult.Status == "fail")
+                {
+                    var failedChecks = doctorResult.Checks.Where(c => c.Status == "fail").ToList();
+                    if (failedChecks.Count > 0)
+                    {
+                        messageParts.Add($"Doctor failures: {string.Join("; ", failedChecks.Select(c => c.Summary))}");
+                    }
+                }
+
+                SetStatus(string.Join("\n", messageParts), StatusMessageType.Error);
+                _logger.LogError("Certificate generation failed: {0}", result.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error displaying failure result");
+                SetStatus($"Certificate generation failed: {result?.Message ?? "Unknown error"}", StatusMessageType.Error);
             }
         }
 

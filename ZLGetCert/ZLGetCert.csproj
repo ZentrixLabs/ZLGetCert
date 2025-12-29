@@ -209,6 +209,12 @@
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.9" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ZLGetCert.Core\ZLGetCert.Core.csproj">
+      <Project>{B2C3D4E5-F6A7-8901-BCDE-F12345678901}</Project>
+      <Name>ZLGetCert.Core</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
     <Resource Include="ZLGetCert_icon_v2_1024.png" />
     <Resource Include="ZLLogo.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
