@@ -244,10 +244,10 @@ namespace ZentrixLabs.ZLGetCert.Cli
             // Construct ExecutionContext
             var executionContext = new ExecutionContext(request);
 
-            // Construct CertificateRequestExecutor with real CA client and placeholder stub services
+            // Construct CertificateRequestExecutor with real CA client and services
             var caClient = new ZentrixLabs.ZLGetCert.Core.Services.Adcs.CertReqCertificateAuthorityClient();
             var exportService = new ZentrixLabs.ZLGetCert.Core.Services.Export.CertUtilExportService();
-            var parser = new StubCertificateParser();
+            var parser = new ZentrixLabs.ZLGetCert.Core.Services.Parsing.X509CertificateParser();
             var executor = new CertificateRequestExecutor(caClient, exportService, parser);
 
             // Execute the request
@@ -688,21 +688,6 @@ namespace ZentrixLabs.ZLGetCert.Cli
             }
         }
 
-        private sealed class StubCertificateParser : ICertificateParser
-        {
-            public CertificateDetails Parse(ExecutionContext context, CaIssueResult issued)
-            {
-                return null;
-            }
-
-            public List<InvariantResult> ValidateInvariants(
-                ExecutionContext context,
-                CaIssueResult issued,
-                List<ExportedArtifact> exported)
-            {
-                return new List<InvariantResult>();
-            }
-        }
     }
 }
 

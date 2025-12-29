@@ -30,7 +30,7 @@ namespace ZentrixLabs.ZLGetCert.Core.Pipeline
 
         /// <summary>
         /// This method is the future canonical path for CLI and WPF.
-        /// For now it performs validation + returns a structured failure stating "Not implemented".
+        /// Executes the full certificate request flow: CA issue -> export -> parse -> validate invariants.
         /// </summary>
         /// <param name="context">The execution context.</param>
         /// <returns>The certificate result.</returns>
@@ -48,11 +48,111 @@ namespace ZentrixLabs.ZLGetCert.Core.Pipeline
             // NOTE: Doctor should be run by hosts before calling Execute.
             // Execute will still enforce critical invariants later.
 
-            // Placeholder until CA client + export service are extracted from WPF:
-            return Fail(
-                ZentrixLabs.ZLGetCert.Core.Contracts.FailureCategory.EnvironmentError,
-                "Certificate request execution is not implemented yet (core pipeline scaffolded).",
-                context);
+            // Step 1: Issue certificate from CA
+            var issued = _ca.Issue(context);
+            if (!issued.Success)
+            {
+                return new ZentrixLabs.ZLGetCert.Core.Contracts.CertificateResult
+                {
+                    Status = "failed",
+                    FailureCategory = issued.FailureCategory ?? ZentrixLabs.ZLGetCert.Core.Contracts.FailureCategory.CARequestError,
+                    Message = issued.Message,
+                    RequestId = context.Request.RequestId,
+                    TimestampUtc = DateTime.UtcNow,
+                    Certificate = null,
+                    Artifacts = new ZentrixLabs.ZLGetCert.Core.Contracts.ArtifactReport
+                    {
+                        Native = new ZentrixLabs.ZLGetCert.Core.Contracts.NativeArtifacts
+                        {
+                            CerPath = issued.CerPath,
+                            PfxPath = issued.PfxPath,
+                            ChainPath = issued.ChainPath
+                        },
+                        Exported = new System.Collections.Generic.List<ZentrixLabs.ZLGetCert.Core.Contracts.ExportedArtifact>()
+                    },
+                    Invariants = new System.Collections.Generic.List<ZentrixLabs.ZLGetCert.Core.Contracts.InvariantResult>()
+                };
+            }
+
+            // Step 2: Export artifacts
+            var exportResult = _export.Export(context, issued);
+            if (!exportResult.Success)
+            {
+                // Best effort: validate invariants even on export failure
+                var invariants = _parser.ValidateInvariants(context, issued, exportResult.Exported ?? new System.Collections.Generic.List<ZentrixLabs.ZLGetCert.Core.Contracts.ExportedArtifact>());
+
+                return new ZentrixLabs.ZLGetCert.Core.Contracts.CertificateResult
+                {
+                    Status = "failed",
+                    FailureCategory = exportResult.FailureCategory ?? ZentrixLabs.ZLGetCert.Core.Contracts.FailureCategory.ExportError,
+                    Message = exportResult.Message,
+                    RequestId = context.Request.RequestId,
+                    TimestampUtc = DateTime.UtcNow,
+                    Certificate = null,
+                    Artifacts = new ZentrixLabs.ZLGetCert.Core.Contracts.ArtifactReport
+                    {
+                        Native = new ZentrixLabs.ZLGetCert.Core.Contracts.NativeArtifacts
+                        {
+                            CerPath = issued.CerPath,
+                            PfxPath = issued.PfxPath,
+                            ChainPath = issued.ChainPath
+                        },
+                        Exported = exportResult.Exported ?? new System.Collections.Generic.List<ZentrixLabs.ZLGetCert.Core.Contracts.ExportedArtifact>()
+                    },
+                    Invariants = invariants
+                };
+            }
+
+            // Step 3: Parse certificate details
+            var certificateDetails = _parser.Parse(context, issued);
+            if (certificateDetails == null)
+            {
+                // Parsing failed - return FormatError
+                return new ZentrixLabs.ZLGetCert.Core.Contracts.CertificateResult
+                {
+                    Status = "failed",
+                    FailureCategory = ZentrixLabs.ZLGetCert.Core.Contracts.FailureCategory.FormatError,
+                    Message = "Failed to parse issued certificate",
+                    RequestId = context.Request.RequestId,
+                    TimestampUtc = DateTime.UtcNow,
+                    Certificate = null,
+                    Artifacts = new ZentrixLabs.ZLGetCert.Core.Contracts.ArtifactReport
+                    {
+                        Native = new ZentrixLabs.ZLGetCert.Core.Contracts.NativeArtifacts
+                        {
+                            CerPath = issued.CerPath,
+                            PfxPath = issued.PfxPath,
+                            ChainPath = issued.ChainPath
+                        },
+                        Exported = exportResult.Exported ?? new System.Collections.Generic.List<ZentrixLabs.ZLGetCert.Core.Contracts.ExportedArtifact>()
+                    },
+                    Invariants = new System.Collections.Generic.List<ZentrixLabs.ZLGetCert.Core.Contracts.InvariantResult>()
+                };
+            }
+
+            // Step 4: Validate invariants
+            var invariantsList = _parser.ValidateInvariants(context, issued, exportResult.Exported ?? new System.Collections.Generic.List<ZentrixLabs.ZLGetCert.Core.Contracts.ExportedArtifact>());
+
+            // Step 5: Return success result
+            return new ZentrixLabs.ZLGetCert.Core.Contracts.CertificateResult
+            {
+                Status = "success",
+                Message = "Certificate issued successfully",
+                RequestId = context.Request.RequestId,
+                TimestampUtc = DateTime.UtcNow,
+                Certificate = certificateDetails,
+                Artifacts = new ZentrixLabs.ZLGetCert.Core.Contracts.ArtifactReport
+                {
+                    Native = new ZentrixLabs.ZLGetCert.Core.Contracts.NativeArtifacts
+                    {
+                        CerPath = issued.CerPath,
+                        PfxPath = issued.PfxPath,
+                        ChainPath = issued.ChainPath
+                    },
+                    Exported = exportResult.Exported ?? new System.Collections.Generic.List<ZentrixLabs.ZLGetCert.Core.Contracts.ExportedArtifact>()
+                },
+                Invariants = invariantsList
+            };
         }
 
         private static ZentrixLabs.ZLGetCert.Core.Contracts.CertificateResult Fail(
