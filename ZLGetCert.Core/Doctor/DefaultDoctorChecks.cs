@@ -11,14 +11,18 @@ namespace ZentrixLabs.ZLGetCert.Core.Doctor
         {
             return new IDoctorCheck[]
             {
-                // Configuration validity first
+                // Environment checks first
+                new WindowsOsCheck(),
+                new RuntimeInfoCheck(),
+                new ElevationCheck(),
+                new ToolingPresenceCheck(),
+
+                // Configuration validity
                 new ConfigRequiredFieldsCheck(),
                 new ModeLegalityCheck(),
 
                 // Export safety before any external interaction
                 new ExportDestinationReadinessCheck()
-
-                // Environment + CA reachability checks will be added later
             };
         }
     }
