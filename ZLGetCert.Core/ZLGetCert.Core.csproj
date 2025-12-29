@@ -56,6 +56,7 @@
     <Compile Include="Services\IExportService.cs" />
     <Compile Include="Services\ICertificateParser.cs" />
     <Compile Include="Services\Adcs\CertReqCertificateAuthorityClient.cs" />
+    <Compile Include="Services\Export\CertUtilExportService.cs" />
     <Compile Include="Pipeline\ExecutionContext.cs" />
     <Compile Include="Pipeline\CertificateRequestExecutor.cs" />
     <Compile Include="Doctor\Checks\CaDnsResolutionCheck.cs" />
