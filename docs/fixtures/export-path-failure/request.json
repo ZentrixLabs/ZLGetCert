@@ -1,0 +1,35 @@
+{
+  "commonName": "example.internal",
+  "subjectAlternativeNames": [
+    "dns:example.internal"
+  ],
+  "mode": "newKeypair",
+  "caConfig": {
+    "caServer": "CA_HOSTNAME_HERE",
+    "caName": "CA_NAME_HERE"
+  },
+  "template": "TEMPLATE_HERE",
+  "authMode": "currentUser",
+  "keyAlgorithm": "RSA",
+  "keySize": 2048,
+  "hashAlgorithm": "sha256",
+  "exportablePrivateKey": false,
+  "exports": {
+    "leafPem": {
+      "enabled": true,
+      "path": "C:\\Windows\\System32\\leaf.pem"
+    },
+    "keyPem": {
+      "enabled": false,
+      "path": "C:\\PATH\\TO\\OUTPUT\\key.pem"
+    },
+    "caBundlePem": {
+      "enabled": true,
+      "path": "C:\\PATH\\TO\\OUTPUT\\ca-bundle.pem"
+    }
+  },
+  "overwrite": false,
+  "requestId": "fixture-export-path-failure-placeholder",
+  "outputFormat": "json"
+}
+

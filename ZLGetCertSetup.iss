@@ -3,7 +3,7 @@
 
 #define MyAppName "ZLGetCert"
 #ifndef MyAppVersion
-#define MyAppVersion "1.8.6"
+#define MyAppVersion "1.8.8"
 #endif
 #ifndef EnableSigning
 #define EnableSigning "1"
