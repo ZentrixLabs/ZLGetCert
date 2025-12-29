@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using ZentrixLabs.ZLGetCert.Core.Contracts;
+using ZentrixLabs.ZLGetCert.Core.Doctor;
 
 namespace ZentrixLabs.ZLGetCert.Core.Doctor.Checks
 {

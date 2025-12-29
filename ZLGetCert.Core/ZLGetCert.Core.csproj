@@ -52,6 +52,8 @@
     <Compile Include="Contracts\FailureCategory.cs" />
     <Compile Include="Contracts\CertificateRequest.cs" />
     <Compile Include="Contracts\CertificateResult.cs" />
+    <Compile Include="Contracts\DoctorResult.cs" />
+    <Compile Include="Contracts\DoctorCheckResult.cs" />
     <Compile Include="Services\ICertificateAuthorityClient.cs" />
     <Compile Include="Services\IExportService.cs" />
     <Compile Include="Services\ICertificateParser.cs" />
@@ -60,8 +62,19 @@
     <Compile Include="Services\Parsing\X509CertificateParser.cs" />
     <Compile Include="Pipeline\ExecutionContext.cs" />
     <Compile Include="Pipeline\CertificateRequestExecutor.cs" />
+    <Compile Include="Doctor\IDoctorCheck.cs" />
+    <Compile Include="Doctor\DoctorContext.cs" />
+    <Compile Include="Doctor\DoctorRunner.cs" />
+    <Compile Include="Doctor\DefaultDoctorChecks.cs" />
     <Compile Include="Doctor\Checks\CaDnsResolutionCheck.cs" />
     <Compile Include="Doctor\Checks\CaTransportReachabilityCheck.cs" />
+    <Compile Include="Doctor\Checks\ConfigRequiredFieldsCheck.cs" />
+    <Compile Include="Doctor\Checks\ElevationCheck.cs" />
+    <Compile Include="Doctor\Checks\ExportDestinationReadinessCheck.cs" />
+    <Compile Include="Doctor\Checks\ModeLegalityCheck.cs" />
+    <Compile Include="Doctor\Checks\RuntimeInfoCheck.cs" />
+    <Compile Include="Doctor\Checks\ToolingPresenceCheck.cs" />
+    <Compile Include="Doctor\Checks\WindowsOsCheck.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

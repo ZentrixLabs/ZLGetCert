@@ -349,7 +349,7 @@ namespace ZentrixLabs.ZLGetCert.Core.Services.Adcs
                 }
 
                 sb.AppendLine($"KeySpec={keySpec}");
-                sb.AppendLine($"KeyLength={request.Crypto.KeySize > 0 ? request.Crypto.KeySize : 2048}");
+                sb.AppendLine($"KeyLength={(request.Crypto.KeySize > 0 ? request.Crypto.KeySize : 2048)}");
                 
                 if (request.Crypto.ExportablePrivateKey)
                 {

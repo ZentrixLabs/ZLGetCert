@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using ZentrixLabs.ZLGetCert.Core.Contracts;
+using ZentrixLabs.ZLGetCert.Core.Doctor;
 
 namespace ZentrixLabs.ZLGetCert.Core.Doctor.Checks
 {
