@@ -136,6 +136,11 @@ namespace ZentrixLabs.ZLGetCert.Core.Contracts
         /// Explicit config string in "server\CAName" form. Alternative to CaServer/CaName.
         /// </summary>
         public string ConfigString { get; set; }
+
+        /// <summary>
+        /// CA server port for transport connectivity checks. Optional.
+        /// </summary>
+        public int? Port { get; set; }
     }
 
     /// <summary>

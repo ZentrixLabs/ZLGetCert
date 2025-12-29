@@ -17,6 +17,10 @@ namespace ZentrixLabs.ZLGetCert.Core.Doctor
                 new ElevationCheck(),
                 new ToolingPresenceCheck(),
 
+                // CA connectivity checks
+                new CaDnsResolutionCheck(),
+                new CaTransportReachabilityCheck(),
+
                 // Configuration validity
                 new ConfigRequiredFieldsCheck(),
                 new ModeLegalityCheck(),

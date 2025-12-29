@@ -52,6 +52,8 @@
     <Compile Include="Contracts\FailureCategory.cs" />
     <Compile Include="Contracts\CertificateRequest.cs" />
     <Compile Include="Contracts\CertificateResult.cs" />
+    <Compile Include="Doctor\Checks\CaDnsResolutionCheck.cs" />
+    <Compile Include="Doctor\Checks\CaTransportReachabilityCheck.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
