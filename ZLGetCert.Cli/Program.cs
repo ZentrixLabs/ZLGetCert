@@ -6,6 +6,8 @@ using System.Linq;
 using System.Web.Script.Serialization;
 using ZentrixLabs.ZLGetCert.Core.Contracts;
 using ZentrixLabs.ZLGetCert.Core.Doctor;
+using ZentrixLabs.ZLGetCert.Core.Pipeline;
+using ZentrixLabs.ZLGetCert.Core.Services;
 
 namespace ZentrixLabs.ZLGetCert.Cli
 {
@@ -13,17 +15,39 @@ namespace ZentrixLabs.ZLGetCert.Cli
     {
         static int Main(string[] args)
         {
-            if (args.Length == 0 || args[0] != "doctor")
+            if (args.Length == 0)
             {
-                Console.Error.WriteLine("Usage: zlgetcert doctor --request <path> [--format text|json]");
+                Console.Error.WriteLine("Usage: zlgetcert <command> [options]");
+                Console.Error.WriteLine("Commands: doctor, request");
                 return 1;
             }
 
+            string command = args[0].ToLowerInvariant();
+
+            if (command == "doctor")
+            {
+                return RunDoctorCommand(args.Skip(1).ToArray());
+            }
+            else if (command == "request")
+            {
+                return RunRequestCommand(args.Skip(1).ToArray());
+            }
+            else
+            {
+                Console.Error.WriteLine($"Unknown command: {command}");
+                Console.Error.WriteLine("Usage: zlgetcert <command> [options]");
+                Console.Error.WriteLine("Commands: doctor, request");
+                return 1;
+            }
+        }
+
+        static int RunDoctorCommand(string[] args)
+        {
             // Parse arguments
             string requestPath = null;
             string format = "text";
 
-            for (int i = 1; i < args.Length; i++)
+            for (int i = 0; i < args.Length; i++)
             {
                 if (args[i] == "--request" && i + 1 < args.Length)
                 {
@@ -150,6 +174,246 @@ namespace ZentrixLabs.ZLGetCert.Cli
 
             // Return appropriate exit code
             return result.Status == "pass" ? 0 : 2;
+        }
+
+        static int RunRequestCommand(string[] args)
+        {
+            // Parse arguments
+            string requestPath = null;
+            string format = "text";
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == "--request" && i + 1 < args.Length)
+                {
+                    requestPath = args[i + 1];
+                    i++; // Skip the next argument as it's the value
+                }
+                else if (args[i] == "--format" && i + 1 < args.Length)
+                {
+                    format = args[i + 1].ToLowerInvariant();
+                    if (format != "text" && format != "json")
+                    {
+                        Console.Error.WriteLine("Invalid format. Must be 'text' or 'json'.");
+                        return 1;
+                    }
+                    i++; // Skip the next argument as it's the value
+                }
+            }
+
+            // Validate --request is provided
+            if (string.IsNullOrEmpty(requestPath))
+            {
+                Console.Error.WriteLine("Error: --request is required");
+                return 2;
+            }
+
+            // Read and parse request file
+            CertificateRequest request = null;
+            string requestId = null;
+            try
+            {
+                if (!File.Exists(requestPath))
+                {
+                    var errorResult = CreateConfigurationErrorResult(
+                        "Request file not found",
+                        $"The request file does not exist: {requestPath}",
+                        null);
+                    OutputCertificateResult(errorResult, format);
+                    return 2;
+                }
+
+                string jsonContent = File.ReadAllText(requestPath);
+                request = DeserializeRequest(jsonContent);
+                if (request == null)
+                {
+                    throw new InvalidOperationException("Failed to deserialize request file");
+                }
+                requestId = request.RequestId;
+            }
+            catch (Exception ex)
+            {
+                var errorResult = CreateConfigurationErrorResult(
+                    "Failed to read or parse request file",
+                    ex.Message,
+                    requestId);
+                OutputCertificateResult(errorResult, format);
+                return 2;
+            }
+
+            // Construct ExecutionContext
+            var executionContext = new ExecutionContext(request);
+
+            // Construct CertificateRequestExecutor with placeholder stub services
+            var caClient = new StubCertificateAuthorityClient();
+            var exportService = new StubExportService();
+            var parser = new StubCertificateParser();
+            var executor = new CertificateRequestExecutor(caClient, exportService, parser);
+
+            // Execute the request
+            var result = executor.Execute(executionContext);
+
+            // Output the result
+            OutputCertificateResult(result, format);
+
+            // Return appropriate exit code
+            if (result.Status == "success")
+            {
+                return 0;
+            }
+            else if (result.Status == "failed")
+            {
+                if (result.FailureCategory == FailureCategory.ConfigurationError)
+                {
+                    return 2;
+                }
+                else
+                {
+                    return 1;
+                }
+            }
+
+            return 1;
+        }
+
+        static CertificateResult CreateConfigurationErrorResult(string message, string detail, string requestId)
+        {
+            return new CertificateResult
+            {
+                Status = "failed",
+                FailureCategory = FailureCategory.ConfigurationError,
+                Message = $"{message}: {detail}",
+                RequestId = requestId,
+                TimestampUtc = DateTime.UtcNow,
+                Certificate = null,
+                Artifacts = new ArtifactReport
+                {
+                    Native = new NativeArtifacts(),
+                    Exported = new List<ExportedArtifact>()
+                },
+                Invariants = new List<InvariantResult>()
+            };
+        }
+
+        static void OutputCertificateResult(CertificateResult result, string format)
+        {
+            if (format == "json")
+            {
+                Console.WriteLine(SerializeCertificateResultToJson(result));
+            }
+            else
+            {
+                PrintCertificateResultText(result);
+            }
+        }
+
+        static void PrintCertificateResultText(CertificateResult result)
+        {
+            if (result.Status == "failed")
+            {
+                string categoryStr = result.FailureCategory.HasValue 
+                    ? result.FailureCategory.Value.ToString() 
+                    : "Unknown";
+                Console.WriteLine($"FAIL {categoryStr} - {result.Message}");
+                if (!string.IsNullOrEmpty(result.RequestId))
+                {
+                    Console.WriteLine($"requestId: {result.RequestId}");
+                }
+            }
+            else if (result.Status == "success")
+            {
+                Console.WriteLine($"SUCCESS - {result.Message}");
+                if (!string.IsNullOrEmpty(result.RequestId))
+                {
+                    Console.WriteLine($"requestId: {result.RequestId}");
+                }
+            }
+        }
+
+        static string SerializeCertificateResultToJson(CertificateResult result)
+        {
+            var serializer = new JavaScriptSerializer();
+            var dict = new Dictionary<string, object>
+            {
+                ["status"] = result.Status,
+                ["timestampUtc"] = result.TimestampUtc.ToString("o")
+            };
+
+            if (result.FailureCategory.HasValue)
+                dict["failureCategory"] = result.FailureCategory.Value.ToString();
+
+            if (!string.IsNullOrEmpty(result.Message))
+                dict["message"] = result.Message;
+
+            if (!string.IsNullOrEmpty(result.RequestId))
+                dict["requestId"] = result.RequestId;
+
+            if (result.Certificate != null)
+            {
+                var certDict = new Dictionary<string, object>();
+                if (!string.IsNullOrEmpty(result.Certificate.Thumbprint))
+                    certDict["thumbprint"] = result.Certificate.Thumbprint;
+                if (!string.IsNullOrEmpty(result.Certificate.Subject))
+                    certDict["subject"] = result.Certificate.Subject;
+                if (!string.IsNullOrEmpty(result.Certificate.Issuer))
+                    certDict["issuer"] = result.Certificate.Issuer;
+                if (!string.IsNullOrEmpty(result.Certificate.SerialNumber))
+                    certDict["serialNumber"] = result.Certificate.SerialNumber;
+                if (result.Certificate.NotBefore.HasValue)
+                    certDict["notBefore"] = result.Certificate.NotBefore.Value.ToString("o");
+                if (result.Certificate.NotAfter.HasValue)
+                    certDict["notAfter"] = result.Certificate.NotAfter.Value.ToString("o");
+                if (!string.IsNullOrEmpty(result.Certificate.KeyAlgorithm))
+                    certDict["keyAlgorithm"] = result.Certificate.KeyAlgorithm;
+                if (result.Certificate.KeySize.HasValue)
+                    certDict["keySize"] = result.Certificate.KeySize.Value;
+                if (result.Certificate.SubjectAlternativeNames != null && result.Certificate.SubjectAlternativeNames.Count > 0)
+                    certDict["subjectAlternativeNames"] = result.Certificate.SubjectAlternativeNames.ToArray();
+                if (result.Certificate.Fingerprints != null && !string.IsNullOrEmpty(result.Certificate.Fingerprints.Sha256))
+                    certDict["fingerprints"] = new Dictionary<string, object> { ["sha256"] = result.Certificate.Fingerprints.Sha256 };
+                dict["certificate"] = certDict;
+            }
+
+            if (result.Artifacts != null)
+            {
+                var artifactsDict = new Dictionary<string, object>();
+                if (result.Artifacts.Native != null)
+                {
+                    var nativeDict = new Dictionary<string, object>();
+                    if (!string.IsNullOrEmpty(result.Artifacts.Native.CerPath))
+                        nativeDict["cerPath"] = result.Artifacts.Native.CerPath;
+                    if (!string.IsNullOrEmpty(result.Artifacts.Native.PfxPath))
+                        nativeDict["pfxPath"] = result.Artifacts.Native.PfxPath;
+                    if (!string.IsNullOrEmpty(result.Artifacts.Native.ChainPath))
+                        nativeDict["chainPath"] = result.Artifacts.Native.ChainPath;
+                    artifactsDict["native"] = nativeDict;
+                }
+                if (result.Artifacts.Exported != null && result.Artifacts.Exported.Count > 0)
+                {
+                    artifactsDict["exported"] = result.Artifacts.Exported.Select(e => new Dictionary<string, object>
+                    {
+                        ["name"] = e.Name ?? "",
+                        ["path"] = e.Path ?? "",
+                        ["written"] = e.Written,
+                        ["sizeBytes"] = e.SizeBytes,
+                        ["sha256"] = e.Sha256 ?? "",
+                        ["certificateCount"] = e.CertificateCount
+                    }).ToArray();
+                }
+                dict["artifacts"] = artifactsDict;
+            }
+
+            if (result.Invariants != null && result.Invariants.Count > 0)
+            {
+                dict["invariants"] = result.Invariants.Select(i => new Dictionary<string, object>
+                {
+                    ["name"] = i.Name ?? "",
+                    ["ok"] = i.Ok,
+                    ["detail"] = i.Detail ?? ""
+                }).ToArray();
+            }
+
+            return serializer.Serialize(dict);
         }
 
         static CertificateRequest DeserializeRequest(string json)
@@ -393,6 +657,50 @@ namespace ZentrixLabs.ZLGetCert.Cli
                         Console.WriteLine($"  {check.Remediation}");
                     }
                 }
+            }
+        }
+
+        // Stub implementations for certificate request execution
+        private sealed class StubCertificateAuthorityClient : ICertificateAuthorityClient
+        {
+            public CaIssueResult Issue(ExecutionContext context)
+            {
+                return new CaIssueResult
+                {
+                    Success = false,
+                    FailureCategory = FailureCategory.EnvironmentError,
+                    Message = "Not implemented"
+                };
+            }
+        }
+
+        private sealed class StubExportService : IExportService
+        {
+            public ExportResult Export(ExecutionContext context, CaIssueResult issued)
+            {
+                return new ExportResult
+                {
+                    Success = false,
+                    FailureCategory = FailureCategory.EnvironmentError,
+                    Message = "Not implemented",
+                    Exported = new List<ExportedArtifact>()
+                };
+            }
+        }
+
+        private sealed class StubCertificateParser : ICertificateParser
+        {
+            public CertificateDetails Parse(ExecutionContext context, CaIssueResult issued)
+            {
+                return null;
+            }
+
+            public List<InvariantResult> ValidateInvariants(
+                ExecutionContext context,
+                CaIssueResult issued,
+                List<ExportedArtifact> exported)
+            {
+                return new List<InvariantResult>();
             }
         }
     }
