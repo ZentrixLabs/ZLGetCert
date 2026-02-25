@@ -5,7 +5,9 @@
 [![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)](https://www.microsoft.com/windows)
 [![Version](https://img.shields.io/github/v/tag/ZentrixLabs/ZLGetCert?label=Version&sort=semver)](https://github.com/ZentrixLabs/ZLGetCert/tags)
 
-A modern Windows WPF application that simplifies certificate requests from on-premises Certificate Authority (CA) without requiring PowerShell or command-line expertise. Features a clean, card-based UI with comprehensive configuration management.
+## Why?
+
+ZLGetCert exists to make certificate requests from an on-prem Microsoft CA repeatable and safe in restricted environments (legacy servers, OT/SCADA, and air-gapped networks) without requiring ad-hoc PowerShell or OpenSSL tooling.
 
 **Built on .NET Framework 4.8** for maximum compatibility with legacy servers, OT (Operational Technology) environments, and air-gapped systems where newer .NET versions may not be available.
 
@@ -141,7 +143,6 @@ The application uses `appsettings.json` for configuration. All UI options are dy
   "DefaultSettings": {
     "KeyLength": 2048,
     "HashAlgorithm": "sha256",
-    "DefaultPassword": "password",
     "RequirePasswordConfirmation": true,
     "AutoCleanup": true,
     "RememberPassword": false,
@@ -330,7 +331,7 @@ The application uses modern WPF patterns:
 - **Custom ASN.1/DER Encoder**: Pure .NET PKCS#1 private key encoding
 - **Newtonsoft.Json**: Configuration serialization
 - **NLog**: Logging framework
-- **Font Awesome 7 Pro**: Professional icon library
+- **Font Awesome 7**: Professional icon library
 
 ## Documentation
 
