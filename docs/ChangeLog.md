@@ -38,7 +38,7 @@
 - **CSR Workflow Clarity**: Prominent "Import CSR" button at top with clear workflow separation
 
 #### Visual & Branding ✅
-- **Font Awesome 7 Pro Integration**: 40+ professional icons replacing emoji
+- **Font Awesome 7 Integration**: 40+ professional icons replacing emoji
   - Consistent sizing and appearance
   - Better accessibility
   - Professional look and feel
